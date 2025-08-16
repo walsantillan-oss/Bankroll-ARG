@@ -19,6 +19,26 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Asignar la referencia de UI al juego
   game.ui = gameUI;
+
+  // Conectar callbacks de estado y log para actualizar la UI
+  game.onGameStateChange = (state) => {
+    // UI principal
+    if (state.currentPlayer) {
+      gameUI.updateUI(
+        state.currentPlayer,
+        state.canRollDice,
+        state.canBuyProperty,
+        state.canEndTurn,
+        state.waitingForBuyDecision
+      );
+    }
+    // Panel lateral con todos los jugadores
+    gameUI.updateAllPlayersInfo(state.players);
+  };
+  
+  game.onLogMessage = (msg) => {
+    gameUI.addFloatingMessage(msg);
+  };
   
   // Exponer gameUI globalmente para las funciones onclick
   window.gameUI = gameUI;
@@ -48,8 +68,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const currentPlayer = game.getCurrentPlayer();
     console.log(`Jugador actual: ${currentPlayer.name}`);
     
-    // Simular tirada de dados
-    game.rollDice();
+    // Forzar mostrar el botón de dados
+    gameUI.showCenterDiceButton();
+    
+    // Asegurar que se puede tirar dados
+    game.canRollDice = true;
+    game.waitingForBuyDecision = false;
+    
+    console.log('Botón de dados forzado a mostrarse');
+    
+    // Simular tirada de dados si es necesario
+    // game.rollDice();
   };
   
   // Función de prueba para probar las reglas de servicios
@@ -67,8 +96,8 @@ document.addEventListener('DOMContentLoaded', () => {
     game.handleUtilityLanding(game.board.getSpace(8));
   };
   
-  // Función de prueba para probar cartas de Destino
-  window.testDestiny = () => {
+  // Función de prueba para probar cartas de Destino (duplicado renombrado)
+  window.testDestiny2 = () => {
     const currentPlayer = game.getCurrentPlayer();
     currentPlayer.position = 11; // Primera posición de Destino
     currentPlayer.updateVisualPosition(game.board);
@@ -97,6 +126,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Recrear el tablero con las nuevas dimensiones
     import('./board/Board.js').then(module => {
       game.board = new module.Board(canvas, canvas.getContext('2d'));
+      // Enlazar jugadores al tablero para dibujar dueños en propiedades
+      if (typeof game.board.setPlayers === 'function') {
+        game.board.setPlayers(game.players);
+      }
       
       // Pequeño retraso para asegurar que todo esté inicializado
       setTimeout(() => {
@@ -120,11 +153,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Agregar controles de teclado
   document.addEventListener('keydown', (event) => {
     switch (event.key) {
-      case ' ': // Barra espaciadora para tirar dados
+    case ' ': // Barra espaciadora para tirar dados
         event.preventDefault();
         if (game.canRollDice) {
-          const dice = game.rollDice();
-          gameUI.updateDiceDisplay(dice[0], dice[1]);
+      game.rollDice();
         }
         break;
       case 'b': // B para comprar propiedad

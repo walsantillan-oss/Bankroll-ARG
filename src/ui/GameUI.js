@@ -7,6 +7,22 @@ export class GameUI {
     this.timerDuration = 15; // segundos por turno
     this.setupElements();
     this.setupEventListeners();
+    
+    // Conectar actualización de estado si el juego expone callback
+    if (this.game) {
+      this.game.onGameStateChange = (state) => {
+        if (state.currentPlayer) {
+          this.updateUI(
+            state.currentPlayer,
+            state.canRollDice,
+            state.canBuyProperty,
+            state.canEndTurn,
+            state.waitingForBuyDecision
+          );
+        }
+        this.updateAllPlayersInfo(state.players);
+      };
+    }
   }
 
   setupElements() {
@@ -140,8 +156,8 @@ export class GameUI {
     const playerCount = parseInt(selectedPlayerBtn.dataset.count);
     const winAmount = customAmount || (selectedAmountBtn ? parseInt(selectedAmountBtn.dataset.amount) : 7500000);
 
-    this.hideGameSetup();
-    this.game.startGame(playerCount, winAmount);
+  this.hideGameSetup();
+  this.game.startGame(playerCount, winAmount);
   }
 
   showGameSetup() {
@@ -154,8 +170,13 @@ export class GameUI {
 
   // Funciones de control del botón central de dados
   showCenterDiceButton() {
+    console.log('Intentando mostrar botón central de dados');
+    console.log('Elemento centerDiceButton:', this.elements.centerDiceButton);
     if (this.elements.centerDiceButton) {
       this.elements.centerDiceButton.style.display = 'block';
+      console.log('Botón central de dados mostrado');
+    } else {
+      console.log('ERROR: No se encontró el elemento center-dice-button');
     }
   }
 
@@ -214,6 +235,25 @@ export class GameUI {
   }
 
   // Funciones de gestión de turnos y timers
+  startTurnTimer(phase = 'ROLL_DICE') {
+    const current = this.game.getCurrentPlayer();
+    if (!current) return;
+    // Fase de dados: mostrar botón de tirar dados
+    if (phase === 'ROLL_DICE') {
+      this.showCenterDiceButton();
+      this.hideCenterButtons();
+    }
+    this.startPlayerTimer(current.id, this.timerDuration);
+  }
+
+  startDecisionPhase() {
+    const current = this.game.getCurrentPlayer();
+    if (!current) return;
+    // En fase de decisión se oculta el botón de dados; los botones de acción los controla updateUI
+    this.hideCenterDiceButton();
+    this.startPlayerTimer(current.id, this.timerDuration);
+  }
+
   startPlayerTimer(playerId, duration = this.timerDuration) {
     this.stopCurrentTimer();
     
@@ -260,7 +300,9 @@ export class GameUI {
     this.updateCurrentPlayerInfo(currentPlayer);
     
     // Controlar visibilidad de botones centrales
+    console.log('Estado del juego:', { canRollDice, waitingForBuyDecision, canBuyProperty, canEndTurn });
     if (canRollDice && !waitingForBuyDecision) {
+      console.log('Debería mostrar botón de dados');
       this.showCenterDiceButton();
       this.hideCenterButtons();
     } else if (waitingForBuyDecision || canBuyProperty || canEndTurn) {

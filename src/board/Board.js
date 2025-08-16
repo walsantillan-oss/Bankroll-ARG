@@ -6,6 +6,7 @@ export class Board {
     this.ctx = context;
     this.spaces = boardSpaces;
     this.groups = propertyGroups;
+  this.players = [];
     
     // Dimensiones del tablero - ajustar al 90% del canvas para dejar margen
     const canvasSize = Math.min(canvas.width, canvas.height);
@@ -19,6 +20,10 @@ export class Board {
     this.offsetY = (canvas.height - this.boardSize) / 2;
     
     this.calculateSpacePositions();
+  }
+  
+  setPlayers(players) {
+    this.players = players || [];
   }
   
   calculateSpacePositions() {
@@ -306,6 +311,9 @@ export class Board {
     
     // Dibujar icono según el tipo
     this.drawSpaceIcon(space, pos);
+
+  // Indicador de propiedad comprada (dueño)
+  this.drawOwnershipBadge(space, pos);
   }
 
   drawRoundedRect(x, y, width, height, radius) {
@@ -470,6 +478,58 @@ export class Board {
       // Resetear align
       this.ctx.textAlign = 'center';
     }
+  }
+
+  drawOwnershipBadge(space, pos) {
+    // Mostrar solo para propiedades, ferrocarriles y servicios con dueño
+    if (!space || pos.isCorner) return;
+    const ownable = space.type === 'PROPERTY' || space.type === 'RAILROAD' || space.type === 'UTILITY';
+    if (!ownable) return;
+    if (space.owner === undefined || space.owner === null) return;
+
+    // Buscar jugador por ID para obtener color e inicial
+    const owner = Array.isArray(this.players) ? this.players.find(p => p.id === space.owner) : null;
+    const color = owner?.color || '#FFD700';
+    const initial = owner?.name ? owner.name.charAt(0).toUpperCase() : '';
+
+    // Posición: esquina inferior izquierda de la casilla
+    const base = Math.min(pos.width, pos.height);
+    const radius = Math.max(6, base * 0.18);
+    const cx = pos.x + 6 + radius;
+    const cy = pos.y + pos.height - 6 - radius;
+
+    // Sombra ligera
+    this.ctx.save();
+    this.ctx.shadowColor = 'rgba(0,0,0,0.35)';
+    this.ctx.shadowBlur = 4;
+    this.ctx.shadowOffsetX = 1;
+    this.ctx.shadowOffsetY = 1;
+
+    // Círculo con color del dueño
+    this.ctx.beginPath();
+    this.ctx.fillStyle = color;
+    this.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Borde dorado
+    this.ctx.shadowColor = 'transparent';
+    this.ctx.lineWidth = Math.max(1.5, radius * 0.18);
+    this.ctx.strokeStyle = '#FFD700';
+    this.ctx.stroke();
+
+    // Inicial del jugador (si hay espacio suficiente)
+    if (initial) {
+      this.ctx.fillStyle = '#FFFFFF';
+      this.ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      this.ctx.lineWidth = Math.max(1, radius * 0.15);
+      this.ctx.font = `bold ${Math.max(8, radius * 1.1)}px Arial`;
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.strokeText(initial, cx, cy);
+      this.ctx.fillText(initial, cx, cy);
+    }
+
+    this.ctx.restore();
   }
 
   wrapText(text, maxWidth) {

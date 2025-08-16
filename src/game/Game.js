@@ -54,6 +54,20 @@ export class Game {
     this.showGameSetup();
   }
   
+  // Iniciar juego con parámetros desde la UI
+  startGame(playerCount = this.minPlayers, winAmount = this.winLimit) {
+    // Aplicar configuraciones seleccionadas
+    if (typeof playerCount === 'number') {
+      this.selectedPlayerCount = Math.max(this.minPlayers, Math.min(this.maxPlayers, playerCount));
+    }
+    if (typeof winAmount === 'number') {
+      this.winLimit = winAmount;
+    }
+    
+    // Inicializar estado y jugadores
+    this.initializeGame();
+  }
+  
   showGameSetup() {
     this.gamePhase = 'SETUP';
     if (this.onGameSetup) {
@@ -100,6 +114,10 @@ export class Game {
     // Crear jugadores según la cantidad seleccionada
     for (let i = 0; i < this.selectedPlayerCount; i++) {
       this.addPlayer(playerNames[i], playerColors[i]);
+    }
+    // Conectar jugadores al tablero para indicadores de propiedad
+    if (this.board && typeof this.board.setPlayers === 'function') {
+      this.board.setPlayers(this.players);
     }
     
     // Posicionar jugadores en LARGADA
@@ -268,7 +286,7 @@ export class Game {
   handlePropertyLanding(space) {
     const currentPlayer = this.getCurrentPlayer();
     
-    if (!space.owner) {
+  if (space.owner === undefined || space.owner === null) {
       // Propiedad libre - verificar si puede comprar
       if (currentPlayer.money >= space.price) {
         this.canBuyProperty = true;
@@ -285,7 +303,7 @@ export class Game {
         // Mostrar solo botón de pasar turno
         this.ui.showCenterButtons(false, space.name, space.price);
       }
-    } else if (space.owner !== currentPlayer.id) {
+  } else if (space.owner !== currentPlayer.id) {
       // Propiedad ocupada - pagar alquiler automáticamente
       const owner = this.players[space.owner];
       const rent = owner.calculateRent(space, boardSpaces);
@@ -309,7 +327,7 @@ export class Game {
   handleRailroadLanding(space) {
     const currentPlayer = this.getCurrentPlayer();
     
-    if (!space.owner) {
+  if (space.owner === undefined || space.owner === null) {
       if (currentPlayer.money >= space.price) {
         this.canBuyProperty = true;
         this.waitingForBuyDecision = true;
@@ -325,7 +343,7 @@ export class Game {
         // Mostrar solo botón de pasar turno
         this.ui.showCenterButtons(false, space.name, space.price);
       }
-    } else if (space.owner !== currentPlayer.id) {
+  } else if (space.owner !== currentPlayer.id) {
       const owner = this.players[space.owner];
       const rent = owner.calculateRent(space, boardSpaces);
       
@@ -346,7 +364,7 @@ export class Game {
   handleUtilityLanding(space) {
     const currentPlayer = this.getCurrentPlayer();
     
-    if (!space.owner) {
+  if (space.owner === undefined || space.owner === null) {
       if (currentPlayer.money >= space.price) {
         this.canBuyProperty = true;
         this.waitingForBuyDecision = true;
@@ -358,7 +376,7 @@ export class Game {
         this.logMessage(`❌ ${currentPlayer.name} no tiene suficiente dinero ($${currentPlayer.money.toLocaleString()})`);
         this.canEndTurn = true;
       }
-    } else if (space.owner !== currentPlayer.id) {
+  } else if (space.owner !== currentPlayer.id) {
       const owner = this.players[space.owner];
       const rent = owner.calculateRent(space, boardSpaces);
       
@@ -976,6 +994,18 @@ export class Game {
     if (this.gamePhase === 'PLAYING') {
       this.draw();
     }
+  }
+  
+  // Helper para UI: precio de la propiedad actual si aplica
+  getCurrentPropertyPrice() {
+    const currentPlayer = this.getCurrentPlayer();
+    if (!currentPlayer) return 0;
+    const space = this.board.getSpace(currentPlayer.position);
+    if (!space) return 0;
+    if (space.type === 'PROPERTY' || space.type === 'RAILROAD' || space.type === 'UTILITY') {
+      return space.price || 0;
+    }
+    return 0;
   }
   
   draw() {
