@@ -4,7 +4,8 @@ export class GameUI {
     this.elements = {};
     this.timers = {};
     this.currentTimer = null;
-    this.timerDuration = 15; // segundos por turno
+  this.timerDuration = 15; // segundos para tirar dados
+  this.decisionTimerDuration = 30; // segundos para decidir comprar/pasar
     this.setupElements();
     this.setupEventListeners();
     
@@ -54,9 +55,15 @@ export class GameUI {
       destinyCardModal: document.getElementById('destiny-card-modal'),
       destinyCardText: document.getElementById('destiny-card-text'),
       destinyCardOk: document.getElementById('destiny-card-ok'),
+  // Modal de cárcel
+  jailOptionsModal: document.getElementById('jail-options-modal'),
+  jailPlayerName: document.getElementById('jail-player-name'),
+  jailPayBtn: document.getElementById('jail-pay-btn'),
+  jailAcceptBtn: document.getElementById('jail-accept-btn'),
       
       // Configuración del juego
       playerCountBtns: document.querySelectorAll('.player-count-btn'),
+  playerNamesContainer: document.getElementById('player-names-container'),
       winAmountBtns: document.querySelectorAll('.win-amount-btn'),
       customWinAmount: document.getElementById('custom-win-amount'),
       setCustomAmountBtn: document.getElementById('set-custom-amount-btn'),
@@ -108,6 +115,22 @@ export class GameUI {
       this.elements.destinyCardOk.addEventListener('click', () => this.closeDestinyCard());
     }
 
+    // Modal de opciones de cárcel
+    if (this.elements.jailPayBtn) {
+      this.elements.jailPayBtn.addEventListener('click', () => {
+        if (this.game && typeof this.game.handleJailPayment === 'function') {
+          this.game.handleJailPayment();
+        }
+      });
+    }
+    if (this.elements.jailAcceptBtn) {
+      this.elements.jailAcceptBtn.addEventListener('click', () => {
+        if (this.game && typeof this.game.handleJailAcceptance === 'function') {
+          this.game.handleJailAcceptance();
+        }
+      });
+    }
+
     // Controles de teclado
     document.addEventListener('keydown', (e) => this.handleKeyPress(e));
   }
@@ -124,6 +147,9 @@ export class GameUI {
     // Actualizar duración estimada
     const duration = count <= 2 ? '10-20 minutos' : count <= 3 ? '15-25 minutos' : '20-35 minutos';
     this.elements.summaryDuration.textContent = duration;
+
+  // Generar campos de nombres
+  this.renderPlayerNameInputs(count);
   }
 
   selectWinAmount(e) {
@@ -156,8 +182,43 @@ export class GameUI {
     const playerCount = parseInt(selectedPlayerBtn.dataset.count);
     const winAmount = customAmount || (selectedAmountBtn ? parseInt(selectedAmountBtn.dataset.amount) : 7500000);
 
-  this.hideGameSetup();
-  this.game.startGame(playerCount, winAmount);
+    // Obtener nombres ingresados (fallback a nombres por defecto)
+    const names = this.collectPlayerNames(playerCount);
+
+    this.hideGameSetup();
+    // Pasar nombres personalizados al juego
+    if (typeof this.game.startGame === 'function') {
+      this.game.startGame(playerCount, winAmount, names);
+    }
+  }
+
+  // Genera inputs para nombres según la cantidad
+  renderPlayerNameInputs(count) {
+    const container = this.elements.playerNamesContainer;
+    if (!container) return;
+    const defaults = ['Rojo', 'Azul', 'Verde', 'Amarillo', 'Magenta'];
+    container.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const row = document.createElement('div');
+      row.className = 'player-name-row';
+      row.innerHTML = `
+        <label for="player-name-${i}">Jugador ${i + 1}:</label>
+        <input id="player-name-${i}" class="player-name-input" type="text" maxlength="12" placeholder="${defaults[i]}" />
+      `;
+      container.appendChild(row);
+    }
+  }
+
+  // Lee los nombres ingresados o aplica placeholders
+  collectPlayerNames(count) {
+    const defaults = ['Rojo', 'Azul', 'Verde', 'Amarillo', 'Magenta'];
+    const names = [];
+    for (let i = 0; i < count; i++) {
+      const input = document.getElementById(`player-name-${i}`);
+      const raw = (input?.value || '').trim();
+      names.push(raw || defaults[i]);
+    }
+    return names;
   }
 
   showGameSetup() {
@@ -231,7 +292,12 @@ export class GameUI {
 
   handleCenterPassTurn() {
     this.hideCenterButtons();
-    this.game.endTurn();
+    // Si estaba decidiendo compra, primero saltar compra y luego terminar turno
+    if (this.game.waitingForBuyDecision) {
+      this.game.skipPurchase();
+    } else {
+      this.game.endTurn();
+    }
   }
 
   // Funciones de gestión de turnos y timers
@@ -251,7 +317,7 @@ export class GameUI {
     if (!current) return;
     // En fase de decisión se oculta el botón de dados; los botones de acción los controla updateUI
     this.hideCenterDiceButton();
-    this.startPlayerTimer(current.id, this.timerDuration);
+  this.startPlayerTimer(current.id, this.decisionTimerDuration);
   }
 
   startPlayerTimer(playerId, duration = this.timerDuration) {
@@ -266,7 +332,12 @@ export class GameUI {
         
         if (this.currentTimer.timeLeft <= 0) {
           this.stopCurrentTimer();
-          this.game.endTurn(); // Auto-terminar turno
+          // Auto-terminar turno (también salta compra si estaba decidiendo)
+          if (typeof this.game.autoEndTurn === 'function') {
+            this.game.autoEndTurn();
+          } else {
+            this.game.endTurn();
+          }
         }
       }, 1000)
     };
@@ -338,18 +409,44 @@ export class GameUI {
     }
 
     if (this.elements.playerProperties) {
-      const properties = player.properties || [];
+      const props = Array.isArray(player.propertiesList) ? player.propertiesList : [];
+      const rails = Array.isArray(player.railroadsList) ? player.railroadsList : [];
+      const utils = Array.isArray(player.utilitiesList) ? player.utilitiesList : [];
+
+      const propertiesHtml = props.length > 0
+        ? props.map(p => {
+            const level = (p.improvements || 0) + 1; // 1..3
+            const tags = [p.hasMonopoly ? '<span class="tag monopoly">Monopolio</span>' : '']
+              .filter(Boolean)
+              .join(' ');
+            return `
+              <div class="property-item">
+                <span class="color-dot" style="background:${p.color || '#999'}"></span>
+                <span class="property-name">${p.name}</span>
+                <span class="property-level">Nivel ${level}/3</span>
+                ${tags}
+              </div>
+            `;
+          }).join('')
+        : '<p class="no-properties">Sin propiedades</p>';
+
+      const railroadsHtml = rails.length > 0
+        ? rails.map(r => `<div class="service-item">🚆 ${r.name}</div>`).join('')
+        : '<p class="no-services">Sin transportes</p>';
+
+      const utilitiesHtml = utils.length > 0
+        ? utils.map(u => `<div class="service-item">⚡ ${u.name}</div>`).join('')
+        : '<p class="no-services">Sin servicios</p>';
+
       this.elements.playerProperties.innerHTML = `
-        <h4>Propiedades (${properties.length})</h4>
-        ${properties.length > 0 ? 
-          properties.map(prop => `
-            <div class="property-item">
-              <span class="property-name">${prop.name}</span>
-              <span class="property-rent">${this.formatMoney(prop.rent)}</span>
-            </div>
-          `).join('') : 
-          '<p class="no-properties">Sin propiedades</p>'
-        }
+        <h4>Propiedades (${props.length})</h4>
+        <div class="properties-list-ui">
+          ${propertiesHtml}
+        </div>
+        <h4 style="margin-top:10px">Transportes (${rails.length})</h4>
+        <div class="railroads-list-ui">${railroadsHtml}</div>
+        <h4 style="margin-top:10px">Servicios (${utils.length})</h4>
+        <div class="utilities-list-ui">${utilitiesHtml}</div>
       `;
     }
   }
@@ -409,10 +506,10 @@ export class GameUI {
   }
 
   // Funciones de cartas de destino
-  showDestinyCard(title, message) {
+  showDestinyCard(message) {
     if (!this.elements.destinyCardModal) return;
 
-    this.elements.destinyCardText.textContent = message;
+  this.elements.destinyCardText.textContent = message;
     this.elements.destinyCardModal.style.display = 'flex';
     
     // Animación de volteo de carta
@@ -433,6 +530,38 @@ export class GameUI {
       if (cardFlip) {
         cardFlip.style.transform = 'rotateY(0deg)';
       }
+      // Notificar al juego para procesar la carta
+      if (this.game && typeof this.game.continueAfterDestiny === 'function') {
+        this.game.continueAfterDestiny();
+      }
+    }
+  }
+
+  // Modal de cárcel
+  showJailOptionsModal(player) {
+    if (!this.elements.jailOptionsModal) return;
+
+    // Texto con el nombre del jugador
+    if (this.elements.jailPlayerName) {
+      this.elements.jailPlayerName.textContent = `${player.name}, ¿qué decides hacer?`;
+    }
+    // Asegurar que el botón de pagar muestra el monto correcto
+    if (this.elements.jailPayBtn) {
+      this.elements.jailPayBtn.textContent = 'Pagar $700.000';
+    }
+
+    // Ocultar botones centrales y detener timer mientras decide
+    this.hideCenterDiceButton();
+    this.hideCenterButtons();
+    this.stopCurrentTimer();
+
+    // Mostrar modal
+    this.elements.jailOptionsModal.style.display = 'flex';
+  }
+
+  hideJailOptions() {
+    if (this.elements.jailOptionsModal) {
+      this.elements.jailOptionsModal.style.display = 'none';
     }
   }
 
@@ -458,7 +587,8 @@ export class GameUI {
   handleKeyPress(e) {
     // Solo procesar si no hay modales abiertos
     if (this.elements.gameSetupModal.classList.contains('show') ||
-        this.elements.destinyCardModal.style.display === 'flex') {
+  this.elements.destinyCardModal.style.display === 'flex' ||
+  (this.elements.jailOptionsModal && this.elements.jailOptionsModal.style.display === 'flex')) {
       return;
     }
 

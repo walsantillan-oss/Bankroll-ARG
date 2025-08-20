@@ -402,14 +402,14 @@ export class Player {
     return this.monopolies;
   }
 
-  // Mejorar una propiedad
+  // Mejorar una propiedad (niveles 1→2→3). Máximo 2 mejoras (nivel 3).
   improveProperty(propertyId, improvementCost) {
     if (!this.propertyImprovements[propertyId]) {
       this.propertyImprovements[propertyId] = 0;
     }
     
-    // Máximo 3 mejoras por propiedad
-    if (this.propertyImprovements[propertyId] >= 3) {
+    // Máximo 2 mejoras por propiedad (para llegar a nivel 3)
+    if (this.propertyImprovements[propertyId] >= 2) {
       return false;
     }
     
@@ -422,24 +422,17 @@ export class Player {
     return false;
   }
 
-  // Obtener el alquiler de una propiedad considerando mejoras y monopolio
+  // Obtener el alquiler de una propiedad según niveles (1, 2=x2, 3=x4)
   getPropertyRent(property) {
-    const improvements = this.propertyImprovements[property.id] || 0;
-    const hasMonopoly = this.monopolies.includes(property.group);
-    
-    // Si no tiene mejoras pero tiene monopolio, el alquiler base se duplica
-    if (improvements === 0 && hasMonopoly) {
-      return property.rent[0] * 2;
-    }
-    
-    // Con mejoras y monopolio
-    if (hasMonopoly && improvements > 0) {
-      // Los índices 3, 4, 5 son para monopolio + mejoras
-      return property.rent[2 + improvements] || property.rent[property.rent.length - 1];
-    }
-    
-    // Solo mejoras sin monopolio
-    return property.rent[improvements] || property.rent[0];
+    const improvements = this.propertyImprovements[property.id] || 0; // 0..2 (nivel = improvements+1)
+    const base = (Array.isArray(property.rent) && property.rent.length > 0)
+      ? property.rent[0]
+      : (property.baseRent || 0);
+
+    // Escala por niveles: 1x, 2x, 4x
+    const multipliers = [1, 2, 4];
+    const idx = Math.max(0, Math.min(2, improvements));
+    return Math.floor(base * multipliers[idx]);
   }
 
   // Obtener el costo de mejora para una propiedad
@@ -448,16 +441,16 @@ export class Player {
     return Math.floor(property.price * 0.5);
   }
 
-  // Verificar si puede mejorar una propiedad
+  // Verificar si puede mejorar una propiedad (requiere monopolio y dinero suficiente)
   canImproveProperty(property) {
     // Debe tener monopolio del grupo de color
     if (!this.monopolies.includes(property.group)) {
       return false;
     }
     
-    // No debe tener más de 3 mejoras
+    // No debe tener más de 2 mejoras (nivel máximo 3)
     const currentImprovements = this.propertyImprovements[property.id] || 0;
-    if (currentImprovements >= 3) {
+    if (currentImprovements >= 2) {
       return false;
     }
     

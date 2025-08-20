@@ -54,14 +54,19 @@ export class Game {
     this.showGameSetup();
   }
   
-  // Iniciar juego con parámetros desde la UI
-  startGame(playerCount = this.minPlayers, winAmount = this.winLimit) {
+  // Iniciar juego con parámetros desde la UI (admite nombres personalizados)
+  startGame(playerCount = this.minPlayers, winAmount = this.winLimit, playerNames = null) {
     // Aplicar configuraciones seleccionadas
     if (typeof playerCount === 'number') {
       this.selectedPlayerCount = Math.max(this.minPlayers, Math.min(this.maxPlayers, playerCount));
     }
     if (typeof winAmount === 'number') {
       this.winLimit = winAmount;
+    }
+    if (Array.isArray(playerNames)) {
+      this.customPlayerNames = playerNames.slice(0, this.selectedPlayerCount);
+    } else {
+      this.customPlayerNames = null;
     }
     
     // Inicializar estado y jugadores
@@ -109,11 +114,12 @@ export class Game {
     
     // Colores predefinidos para los jugadores
     const playerColors = ['#FF0000', '#0000FF', '#00FF00', '#FFFF00', '#FF00FF'];
-    const playerNames = ['Rojo', 'Azul', 'Verde', 'Amarillo', 'Magenta'];
+  const defaultNames = ['Rojo', 'Azul', 'Verde', 'Amarillo', 'Magenta'];
     
     // Crear jugadores según la cantidad seleccionada
     for (let i = 0; i < this.selectedPlayerCount; i++) {
-      this.addPlayer(playerNames[i], playerColors[i]);
+      const name = (this.customPlayerNames && this.customPlayerNames[i]) || defaultNames[i];
+      this.addPlayer(name, playerColors[i]);
     }
     // Conectar jugadores al tablero para indicadores de propiedad
     if (this.board && typeof this.board.setPlayers === 'function') {
@@ -693,11 +699,11 @@ export class Game {
 
   handleJailPayment() {
     const currentPlayer = this.getCurrentPlayer();
-    const jailFee = 750000; // $750.000 pesos
+  const jailFee = 700000; // $700.000 pesos
 
     if (currentPlayer.money >= jailFee) {
       currentPlayer.money -= jailFee;
-      this.logMessage(`💰 ${currentPlayer.name} pagó $${jailFee.toLocaleString()} para evitar la cárcel`);
+  this.logMessage(`💰 ${currentPlayer.name} pagó $${jailFee.toLocaleString()} para evitar la cárcel`);
     } else {
       this.logMessage(`❌ ${currentPlayer.name} no tiene dinero suficiente para pagar. Va a la cárcel.`);
       currentPlayer.goToJail();
@@ -726,7 +732,7 @@ export class Game {
     const currentPlayer = this.getCurrentPlayer();
     currentPlayer.goToJail();
     currentPlayer.updateVisualPosition(this.board);
-    this.logMessage(`🔒 ${currentPlayer.name} aceptó ir a la cárcel por 3 turnos`);
+  this.logMessage(`🔒 ${currentPlayer.name} aceptó ir a la cárcel por 3 turnos`);
     
     // Cerrar el modal, actualizar UI y terminar turno automáticamente
     if (this.ui) {
@@ -813,27 +819,14 @@ export class Game {
     const currentPlayer = this.getCurrentPlayer();
     const space = this.board.getSpace(currentPlayer.position);
     
-    this.logMessage(`⏭️ ${currentPlayer.name} decide no comprar ${space.name}`);
-    
-    this.waitingForBuyDecision = false;
-    this.canBuyProperty = false;
-    this.canEndTurn = true;
-    
-    this.ui.hideCenterButtons();
-    this.updateGameState();
-  }
-  
-  skipPurchase() {
-    if (!this.waitingForBuyDecision) return;
-    
-    const currentPlayer = this.getCurrentPlayer();
-    const space = this.board.getSpace(currentPlayer.position);
-    
     this.logMessage(`❌ ${currentPlayer.name} decide no comprar ${space.name}`);
     this.canBuyProperty = false;
     this.waitingForBuyDecision = false;
     this.canEndTurn = true;
+    this.ui.hideCenterButtons();
     this.updateGameState();
+    // Terminar turno automáticamente
+    this.endTurn();
   }
   
   handleBankruptcy(player) {
@@ -1133,8 +1126,8 @@ export class Game {
       const monopolyMsg = !currentPlayer.monopolies.includes(property.group) 
         ? ' (necesita monopolio del color)' 
         : '';
-      const improvementsMsg = (currentPlayer.propertyImprovements[property.id] || 0) >= 3 
-        ? ' (máximo 3 mejoras)' 
+      const improvementsMsg = (currentPlayer.propertyImprovements[property.id] || 0) >= 2 
+        ? ' (nivel máximo alcanzado)' 
         : '';
       this.logMessage(`❌ No puede mejorar ${property.name}${monopolyMsg}${improvementsMsg}`);
       return false;
@@ -1142,8 +1135,9 @@ export class Game {
     
     const cost = currentPlayer.getImprovementCost(property);
     if (currentPlayer.improveProperty(property.id, cost)) {
-      const improvements = currentPlayer.propertyImprovements[property.id];
-      this.logMessage(`🏗️ ${currentPlayer.name} mejora ${property.name} (Nivel ${improvements}) por $${cost.toLocaleString()}`);
+  const improvements = currentPlayer.propertyImprovements[property.id];
+  const level = improvements + 1; // nivel 1..3
+  this.logMessage(`🏗️ ${currentPlayer.name} mejora ${property.name} (Nivel ${level}) por $${cost.toLocaleString()}`);
       this.logMessage(`💰 ${currentPlayer.name} ahora tiene $${currentPlayer.money.toLocaleString()}`);
       
       // Mostrar nuevo alquiler
@@ -1164,7 +1158,7 @@ export class Game {
 
   // Mostrar información de monopolios y mejoras
   showPlayerImprovements() {
-    const currentPlayer = this.getCurrentPlayer();
+  const currentPlayer = this.getCurrentPlayer();
     
     if (currentPlayer.monopolies.length === 0) {
       this.logMessage(`📋 ${currentPlayer.name} no tiene monopolios para construir mejoras`);
@@ -1177,18 +1171,19 @@ export class Game {
       this.logMessage(`  🎨 ${group.toUpperCase()}:`);
       
       properties.forEach(property => {
-        const improvements = currentPlayer.propertyImprovements[property.id] || 0;
+        const improvements = currentPlayer.propertyImprovements[property.id] || 0; // 0..2
+        const level = improvements + 1; // 1..3
         const currentRent = currentPlayer.getPropertyRent(property);
         const canImprove = currentPlayer.canImproveProperty(property);
         const improveCost = canImprove ? currentPlayer.getImprovementCost(property) : 0;
-        
-        let status = `${property.name} - Nivel ${improvements}/3 - Alquiler: $${currentRent.toLocaleString()}`;
+
+        let status = `${property.name} - Nivel ${level}/3 - Alquiler: $${currentRent.toLocaleString()}`;
         if (canImprove) {
           status += ` - Puede mejorar por $${improveCost.toLocaleString()}`;
-        } else if (improvements >= 3) {
-          status += ` - ¡Máximo nivel!`;
+        } else if (improvements >= 2) {
+          status += ` - ¡Nivel máximo!`;
         }
-        
+
         this.logMessage(`    ${status}`);
       });
     });
