@@ -39,6 +39,12 @@
               <!-- Se generan dinámicamente según la cantidad elegida -->
             </div>
           </div>
+
+          <div class="setup-section">
+            <h3>🧩 Avatares y colores:</h3>
+            <p class="muted">Elige un avatar, color y ficha para cada jugador.</p>
+            <div id="player-avatars-container" class="player-avatars-container"></div>
+          </div>
           
           <div class="setup-section">
             <h3>💰 Configura el monto para ganar:</h3>
@@ -274,25 +280,63 @@
           
           <!-- Mensajes flotantes del juego -->
           <div id="floating-messages" class="floating-messages"></div>
+          
+          <!-- Paneles de información flotantes -->
+          <div class="floating-info-panels">
+            <!-- Panel de estado del juego (arriba izquierda) -->
+            <div class="floating-panel top-left" id="game-status-panel">
+              <div class="game-status">
+                <h3>📊 Estado del Juego</h3>
+                <div id="game-progress">
+                  <div class="progress-item">
+                    <span class="label">Meta Victoria:</span>
+                    <span class="value money">$7.500.000</span>
+                  </div>
+                  <div class="progress-item">
+                    <span class="label">Límite Bancarrota:</span>
+                    <span class="value danger">-$1.000.000</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Panel de jugador actual (arriba derecha) -->
+            <div class="floating-panel top-right" id="current-player-panel">
+              <div class="player-info">
+                <h3>🎯 Jugador Actual</h3>
+                <div id="current-player"></div>
+                <div id="player-money"></div>
+                <div id="player-properties"></div>
+              </div>
+            </div>
+            
+            <!-- Panel de todos los jugadores (abajo izquierda) -->
+            <div class="floating-panel bottom-left" id="all-players-panel">
+              <div class="all-players-panel">
+                <h3>👥 Todos los Jugadores</h3>
+                <div id="all-players-info"></div>
+              </div>
+            </div>
+          </div>
         </div>
         
-        <aside class="game-panel">
-          <!-- Panel de todos los jugadores -->
+        <!-- Sidebar oculta (mantenida para compatibilidad) -->
+        <aside class="game-panel" style="display: none;">
           <div class="all-players-panel">
             <h3>👥 Todos los Jugadores</h3>
-            <div id="all-players-info"></div>
+            <div id="all-players-info-backup"></div>
           </div>
           
           <div class="player-info">
             <h3>Información del Jugador</h3>
-            <div id="current-player"></div>
-            <div id="player-money"></div>
-            <div id="player-properties"></div>
+            <div id="current-player-backup"></div>
+            <div id="player-money-backup"></div>
+            <div id="player-properties-backup"></div>
           </div>
           
           <div class="game-status">
             <h3>Estado del Juego</h3>
-            <div id="game-progress">
+            <div id="game-progress-backup">
               <div class="progress-item">
                 <span class="label">Meta Victoria:</span>
                 <span class="value money">$7.500.000</span>

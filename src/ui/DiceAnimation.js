@@ -10,14 +10,16 @@ export class DiceAnimation {
     this.rotationSpeed = 0.3;
     this.showDice = false; // Nueva propiedad para controlar la visibilidad
     
-    // Configuración de colores realistas
+    // Configuración de colores realistas mejorados
     this.colors = {
-      face: '#F8F8FF',        // Blanco marfil
-      shadow: '#2C2C2C',      // Sombra oscura
-      edge: '#E0E0E0',        // Bordes ligeramente grises
-      dot: '#1A1A1A',         // Puntos negros
-      highlight: '#FFFFFF',    // Brillos blancos
-      ambient: '#D0D0D0'      // Luz ambiental
+      face: '#FEFEFE',        // Blanco más puro
+      shadow: '#1A1A1A',      // Sombra más profunda
+      edge: '#E8E8E8',        // Bordes más suaves
+      dot: '#2C2C2C',         // Puntos más suaves
+      highlight: '#FFFFFF',    // Brillos blancos puros
+      ambient: '#F0F0F0',     // Luz ambiental más cálida
+      gradientStart: '#FFFFFF',
+      gradientEnd: '#F5F5F5'
     };
     
     // Inicializar sonidos de dados
@@ -27,7 +29,7 @@ export class DiceAnimation {
   }
   
   initializeSounds() {
-    // Crear sonidos sintéticos para los dados
+    // Crear sonidos sintéticos mejorados para los dados
     this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
     
     this.sounds = {
@@ -38,81 +40,140 @@ export class DiceAnimation {
   }
   
   playDiceRollSound() {
-    // Sonido de dados rodando - ruido blanco con filtro
-    const duration = 0.3;
-    const gainNode = this.audioContext.createGain();
-    const filter = this.audioContext.createBiquadFilter();
+    // Sonido de dados rodando mejorado - múltiples capas
+    const duration = 0.4;
+    const masterGain = this.audioContext.createGain();
+    masterGain.gain.setValueAtTime(0.1, this.audioContext.currentTime);
+    masterGain.gain.linearRampToValueAtTime(0.08, this.audioContext.currentTime + duration);
     
-    // Crear ruido blanco
+    // Capa 1: Ruido blanco filtrado (fricción de superficie)
+    const noise = this.createWhiteNoise(duration, 0.05);
+    const filter1 = this.audioContext.createBiquadFilter();
+    filter1.type = 'bandpass';
+    filter1.frequency.value = 1200;
+    filter1.Q.value = 3;
+    noise.connect(filter1);
+    filter1.connect(masterGain);
+    
+    // Capa 2: Tonos graves (peso del dado)
+    const oscillator1 = this.audioContext.createOscillator();
+    const gain1 = this.audioContext.createGain();
+    oscillator1.type = 'triangle';
+    oscillator1.frequency.setValueAtTime(120, this.audioContext.currentTime);
+    oscillator1.frequency.linearRampToValueAtTime(80, this.audioContext.currentTime + duration);
+    gain1.gain.setValueAtTime(0.03, this.audioContext.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
+    oscillator1.connect(gain1);
+    gain1.connect(masterGain);
+    
+    // Capa 3: Clicks sutiles (aristas del dado)
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        const click = this.audioContext.createOscillator();
+        const clickGain = this.audioContext.createGain();
+        click.type = 'square';
+        click.frequency.value = 800 + Math.random() * 400;
+        clickGain.gain.setValueAtTime(0, this.audioContext.currentTime);
+        clickGain.gain.linearRampToValueAtTime(0.02, this.audioContext.currentTime + 0.002);
+        clickGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.02);
+        click.connect(clickGain);
+        clickGain.connect(masterGain);
+        click.start();
+        click.stop(this.audioContext.currentTime + 0.02);
+      }, i * 60);
+    }
+    
+    masterGain.connect(this.audioContext.destination);
+    
+    noise.start();
+    noise.stop(this.audioContext.currentTime + duration);
+    oscillator1.start();
+    oscillator1.stop(this.audioContext.currentTime + duration);
+  }
+  
+  createWhiteNoise(duration, volume) {
     const bufferSize = this.audioContext.sampleRate * duration;
     const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
     const data = buffer.getChannelData(0);
     
     for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * 0.3;
+      data[i] = (Math.random() * 2 - 1) * volume;
     }
     
     const source = this.audioContext.createBufferSource();
     source.buffer = buffer;
-    
-    // Configurar filtro para simular sonido de dados
-    filter.type = 'bandpass';
-    filter.frequency.value = 800;
-    filter.Q.value = 2;
-    
-    // Configurar envolvente
-    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.15, this.audioContext.currentTime + 0.01);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
-    
-    source.connect(filter);
-    filter.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
-    
-    source.start();
-    source.stop(this.audioContext.currentTime + duration);
+    return source;
   }
   
   playDiceBounceSound() {
-    // Sonido de rebote - tono breve
-    const frequency = 200 + Math.random() * 300;
-    const duration = 0.1;
+    // Sonido de rebote mejorado - más realista
+    const frequency = 180 + Math.random() * 220;
+    const duration = 0.12;
     
+    const masterGain = this.audioContext.createGain();
+    
+    // Tono principal del rebote
     const oscillator = this.audioContext.createOscillator();
-    const gainNode = this.audioContext.createGain();
-    
+    const gain = this.audioContext.createGain();
     oscillator.type = 'triangle';
     oscillator.frequency.setValueAtTime(frequency, this.audioContext.currentTime);
-    oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.5, this.audioContext.currentTime + duration);
+    oscillator.frequency.exponentialRampToValueAtTime(frequency * 0.3, this.audioContext.currentTime + duration);
     
-    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.1, this.audioContext.currentTime + 0.01);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+    gain.gain.setValueAtTime(0, this.audioContext.currentTime);
+    gain.gain.linearRampToValueAtTime(0.06, this.audioContext.currentTime + 0.005);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
     
-    oscillator.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
+    // Harmónico agudo para el "clic"
+    const harmonicOsc = this.audioContext.createOscillator();
+    const harmonicGain = this.audioContext.createGain();
+    harmonicOsc.type = 'sine';
+    harmonicOsc.frequency.value = frequency * 2.5;
+    harmonicGain.gain.setValueAtTime(0, this.audioContext.currentTime);
+    harmonicGain.gain.linearRampToValueAtTime(0.03, this.audioContext.currentTime + 0.002);
+    harmonicGain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.04);
+    
+    oscillator.connect(gain);
+    harmonicOsc.connect(harmonicGain);
+    gain.connect(masterGain);
+    harmonicGain.connect(masterGain);
+    masterGain.connect(this.audioContext.destination);
+    
+    masterGain.gain.setValueAtTime(0.7, this.audioContext.currentTime);
     
     oscillator.start();
     oscillator.stop(this.audioContext.currentTime + duration);
+    harmonicOsc.start();
+    harmonicOsc.stop(this.audioContext.currentTime + 0.04);
   }
   
   playDiceSettleSound() {
-    // Sonido de asentamiento - clic suave
-    const frequency = 150;
-    const duration = 0.05;
+    // Sonido de asentamiento mejorado - más suave y elegante
+    const duration = 0.08;
+    const masterGain = this.audioContext.createGain();
     
+    // Tono principal - más grave y suave
     const oscillator = this.audioContext.createOscillator();
-    const gainNode = this.audioContext.createGain();
+    const gain = this.audioContext.createGain();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(140, this.audioContext.currentTime);
+    oscillator.frequency.linearRampToValueAtTime(100, this.audioContext.currentTime + duration);
     
-    oscillator.type = 'square';
-    oscillator.frequency.value = frequency;
+    gain.gain.setValueAtTime(0, this.audioContext.currentTime);
+    gain.gain.linearRampToValueAtTime(0.04, this.audioContext.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + duration);
     
-    gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-    gainNode.gain.linearRampToValueAtTime(0.05, this.audioContext.currentTime + 0.005);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + duration);
+    // Filtro pasa-bajos para suavizar
+    const lowpass = this.audioContext.createBiquadFilter();
+    lowpass.type = 'lowpass';
+    lowpass.frequency.value = 300;
+    lowpass.Q.value = 1;
     
-    oscillator.connect(gainNode);
-    gainNode.connect(this.audioContext.destination);
+    oscillator.connect(gain);
+    gain.connect(lowpass);
+    lowpass.connect(masterGain);
+    masterGain.connect(this.audioContext.destination);
+    
+    masterGain.gain.setValueAtTime(0.8, this.audioContext.currentTime);
     
     oscillator.start();
     oscillator.stop(this.audioContext.currentTime + duration);
@@ -338,17 +399,24 @@ export class DiceAnimation {
   }
   
   drawShadow(die) {
-    const shadowSize = this.diceSize * 0.8;
-    const shadowOpacity = 0.3;
+    const shadowSize = this.diceSize * 0.9;
+    const shadowOpacity = 0.25;
     
     this.ctx.save();
-    this.ctx.globalAlpha = shadowOpacity;
-    this.ctx.fillStyle = this.colors.shadow;
-    this.ctx.translate(this.shadowOffset, this.shadowOffset);
+    this.ctx.translate(this.shadowOffset * 0.8, this.shadowOffset * 1.2);
     
-    // Sombra elíptica más realista
+    // Sombra con gradiente radial para mayor realismo
+    const shadowGradient = this.ctx.createRadialGradient(
+      0, shadowSize * 0.3, 0,
+      0, shadowSize * 0.3, shadowSize * 0.7
+    );
+    shadowGradient.addColorStop(0, `rgba(26,26,26,${shadowOpacity})`);
+    shadowGradient.addColorStop(0.6, `rgba(26,26,26,${shadowOpacity * 0.5})`);
+    shadowGradient.addColorStop(1, 'rgba(26,26,26,0)');
+    
+    this.ctx.fillStyle = shadowGradient;
     this.ctx.beginPath();
-    this.ctx.ellipse(0, shadowSize * 0.3, shadowSize * 0.7, shadowSize * 0.3, 0, 0, Math.PI * 2);
+    this.ctx.ellipse(0, shadowSize * 0.3, shadowSize * 0.8, shadowSize * 0.25, 0, 0, Math.PI * 2);
     this.ctx.fill();
     
     this.ctx.restore();
@@ -358,82 +426,135 @@ export class DiceAnimation {
     const size = this.diceSize;
     const half = size / 2;
     
-    // Calcular intensidad de luz basada en rotación
-    const lightIntensity = 0.5 + 0.5 * Math.cos(die.rotationY);
+    // Calcular intensidad de luz basada en rotación (más suave)
+    const lightIntensity = 0.6 + 0.4 * Math.cos(die.rotationY);
+    const shadowIntensity = 0.3 + 0.2 * Math.sin(die.rotationX);
     
-    // Cara frontal (más clara)
-    this.ctx.fillStyle = this.interpolateColor(this.colors.face, this.colors.highlight, lightIntensity * 0.3);
-    this.drawRoundedRect(-half, -half, size, size, 8);
+    // Gradiente radial para la cara principal (más realista)
+    const gradient = this.ctx.createRadialGradient(
+      -half * 0.3, -half * 0.3, 0,
+      0, 0, size * 0.7
+    );
+    gradient.addColorStop(0, this.colors.gradientStart);
+    gradient.addColorStop(0.7, this.colors.face);
+    gradient.addColorStop(1, this.colors.gradientEnd);
+    
+    this.ctx.fillStyle = gradient;
+    this.drawRoundedRect(-half, -half, size, size, 12); // Esquinas más redondeadas
     this.ctx.fill();
     
-    // Bordes 3D - cara derecha
-    this.ctx.fillStyle = this.interpolateColor(this.colors.edge, this.colors.ambient, lightIntensity);
+    // Bordes 3D mejorados - cara derecha con gradiente
+    const rightGradient = this.ctx.createLinearGradient(half, -half, half + 12, -half - 6);
+    rightGradient.addColorStop(0, this.interpolateColor(this.colors.edge, this.colors.ambient, lightIntensity * 0.8));
+    rightGradient.addColorStop(1, this.interpolateColor(this.colors.edge, this.colors.shadow, shadowIntensity * 0.5));
+    
+    this.ctx.fillStyle = rightGradient;
     this.ctx.beginPath();
     this.ctx.moveTo(half, -half);
-    this.ctx.lineTo(half + 10, -half - 5);
-    this.ctx.lineTo(half + 10, half - 5);
+    this.ctx.lineTo(half + 12, -half - 6);
+    this.ctx.lineTo(half + 12, half - 6);
     this.ctx.lineTo(half, half);
     this.ctx.closePath();
     this.ctx.fill();
     
-    // Bordes 3D - cara superior
-    this.ctx.fillStyle = this.interpolateColor(this.colors.edge, this.colors.highlight, lightIntensity * 0.5);
+    // Bordes 3D mejorados - cara superior con gradiente
+    const topGradient = this.ctx.createLinearGradient(-half, -half, -half + 6, -half - 12);
+    topGradient.addColorStop(0, this.interpolateColor(this.colors.edge, this.colors.highlight, lightIntensity * 0.6));
+    topGradient.addColorStop(1, this.interpolateColor(this.colors.edge, this.colors.ambient, lightIntensity * 0.3));
+    
+    this.ctx.fillStyle = topGradient;
     this.ctx.beginPath();
     this.ctx.moveTo(-half, -half);
-    this.ctx.lineTo(-half + 5, -half - 10);
-    this.ctx.lineTo(half + 5, -half - 10);
+    this.ctx.lineTo(-half + 6, -half - 12);
+    this.ctx.lineTo(half + 6, -half - 12);
     this.ctx.lineTo(half, -half);
     this.ctx.closePath();
     this.ctx.fill();
     
-    // Borde principal del dado
-    this.ctx.strokeStyle = this.colors.edge;
-    this.ctx.lineWidth = 2;
-    this.drawRoundedRect(-half, -half, size, size, 8);
+    // Borde principal del dado más suave
+    this.ctx.strokeStyle = this.interpolateColor(this.colors.edge, this.colors.shadow, 0.3);
+    this.ctx.lineWidth = 1.5;
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
+    this.drawRoundedRect(-half, -half, size, size, 12);
     this.ctx.stroke();
     
-    // Dibujar puntos con efecto 3D
+    // Dibujar puntos con efecto 3D mejorado
     this.drawDots3D(die.value, size);
     
-    // Brillo superior
+    // Brillo superior más sutil y realista
     this.ctx.save();
-    this.ctx.globalAlpha = 0.4;
-    this.ctx.fillStyle = this.colors.highlight;
-    this.ctx.beginPath();
-    this.ctx.ellipse(-half * 0.3, -half * 0.3, half * 0.4, half * 0.2, 0, 0, Math.PI * 2);
+    this.ctx.globalAlpha = 0.25;
+    const highlightGradient = this.ctx.createLinearGradient(-half, -half, half, half);
+    highlightGradient.addColorStop(0, this.colors.highlight);
+    highlightGradient.addColorStop(0.6, 'rgba(255,255,255,0.1)');
+    highlightGradient.addColorStop(1, 'rgba(255,255,255,0)');
+    
+    this.ctx.fillStyle = highlightGradient;
+    this.drawRoundedRect(-half, -half, size, size, 12);
     this.ctx.fill();
+    this.ctx.restore();
+    
+    // Sombra interior sutil para profundidad
+    this.ctx.save();
+    this.ctx.globalAlpha = 0.15;
+    this.ctx.strokeStyle = this.colors.shadow;
+    this.ctx.lineWidth = 1;
+    this.drawRoundedRect(-half + 2, -half + 2, size - 4, size - 4, 10);
+    this.ctx.stroke();
     this.ctx.restore();
   }
   
   drawDots3D(value, size) {
-    const dotSize = size * 0.12;
+    const dotSize = size * 0.14; // Puntos ligeramente más grandes
     const margin = size * 0.25;
     const positions = this.getDotPositions(value, size, margin);
     
     positions.forEach(pos => {
-      // Sombra del punto
+      // Sombra del punto más suave
       this.ctx.save();
-      this.ctx.globalAlpha = 0.3;
-      this.ctx.fillStyle = this.colors.shadow;
+      this.ctx.globalAlpha = 0.25;
+      const shadowGradient = this.ctx.createRadialGradient(
+        pos.x + 1.5, pos.y + 1.5, 0,
+        pos.x + 1.5, pos.y + 1.5, dotSize * 1.2
+      );
+      shadowGradient.addColorStop(0, this.colors.shadow);
+      shadowGradient.addColorStop(1, 'rgba(26,26,26,0)');
+      this.ctx.fillStyle = shadowGradient;
       this.ctx.beginPath();
-      this.ctx.arc(pos.x + 2, pos.y + 2, dotSize, 0, Math.PI * 2);
+      this.ctx.arc(pos.x + 1.5, pos.y + 1.5, dotSize * 1.2, 0, Math.PI * 2);
       this.ctx.fill();
       this.ctx.restore();
       
-      // Punto principal
+      // Punto principal con gradiente
       this.ctx.save();
-      this.ctx.fillStyle = this.colors.dot;
+      const dotGradient = this.ctx.createRadialGradient(
+        pos.x - dotSize * 0.3, pos.y - dotSize * 0.3, 0,
+        pos.x, pos.y, dotSize
+      );
+      dotGradient.addColorStop(0, '#3A3A3A'); // Centro más claro
+      dotGradient.addColorStop(0.7, this.colors.dot);
+      dotGradient.addColorStop(1, '#1A1A1A'); // Borde más oscuro
+      
+      this.ctx.fillStyle = dotGradient;
       this.ctx.beginPath();
       this.ctx.arc(pos.x, pos.y, dotSize, 0, Math.PI * 2);
       this.ctx.fill();
       this.ctx.restore();
       
-      // Brillo del punto
+      // Brillo del punto más sutil
       this.ctx.save();
-      this.ctx.globalAlpha = 0.6;
-      this.ctx.fillStyle = this.colors.face;
+      this.ctx.globalAlpha = 0.4;
+      const highlightGradient = this.ctx.createRadialGradient(
+        pos.x - dotSize * 0.4, pos.y - dotSize * 0.4, 0,
+        pos.x - dotSize * 0.4, pos.y - dotSize * 0.4, dotSize * 0.6
+      );
+      highlightGradient.addColorStop(0, 'rgba(255,255,255,0.8)');
+      highlightGradient.addColorStop(1, 'rgba(255,255,255,0)');
+      
+      this.ctx.fillStyle = highlightGradient;
       this.ctx.beginPath();
-      this.ctx.arc(pos.x - dotSize * 0.3, pos.y - dotSize * 0.3, dotSize * 0.4, 0, Math.PI * 2);
+      this.ctx.arc(pos.x - dotSize * 0.4, pos.y - dotSize * 0.4, dotSize * 0.6, 0, Math.PI * 2);
       this.ctx.fill();
       this.ctx.restore();
     });

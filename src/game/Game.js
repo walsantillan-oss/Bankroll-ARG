@@ -55,7 +55,7 @@ export class Game {
   }
   
   // Iniciar juego con parámetros desde la UI (admite nombres personalizados)
-  startGame(playerCount = this.minPlayers, winAmount = this.winLimit, playerNames = null) {
+  startGame(playerCount = this.minPlayers, winAmount = this.winLimit, playerNames = null, playerAvatars = null) {
     // Aplicar configuraciones seleccionadas
     if (typeof playerCount === 'number') {
       this.selectedPlayerCount = Math.max(this.minPlayers, Math.min(this.maxPlayers, playerCount));
@@ -67,6 +67,11 @@ export class Game {
       this.customPlayerNames = playerNames.slice(0, this.selectedPlayerCount);
     } else {
       this.customPlayerNames = null;
+    }
+    if (Array.isArray(playerAvatars)) {
+      this.customPlayerAvatars = playerAvatars.slice(0, this.selectedPlayerCount);
+    } else {
+      this.customPlayerAvatars = null;
     }
     
     // Inicializar estado y jugadores
@@ -119,7 +124,11 @@ export class Game {
     // Crear jugadores según la cantidad seleccionada
     for (let i = 0; i < this.selectedPlayerCount; i++) {
       const name = (this.customPlayerNames && this.customPlayerNames[i]) || defaultNames[i];
-      this.addPlayer(name, playerColors[i]);
+      const avatarInfo = this.customPlayerAvatars && this.customPlayerAvatars[i] ? this.customPlayerAvatars[i] : null;
+      const color = avatarInfo?.color || playerColors[i];
+      const emoji = avatarInfo?.avatar || null;
+      const token = avatarInfo?.token || 'circle';
+      this.addPlayer(name, color, emoji, token);
     }
     // Conectar jugadores al tablero para indicadores de propiedad
     if (this.board && typeof this.board.setPlayers === 'function') {
@@ -146,8 +155,8 @@ export class Game {
     this.ui.startTurnTimer('ROLL_DICE');
   }
   
-  addPlayer(name, color) {
-    const player = new Player(this.players.length, name, color);
+  addPlayer(name, color, avatarEmoji = null, tokenShape = 'circle') {
+    const player = new Player(this.players.length, name, color, 1500000, avatarEmoji, tokenShape);
     this.players.push(player);
     return player;
   }
@@ -460,6 +469,17 @@ export class Game {
       this.processDestinyCard(this.currentDestinyCard);
       this.currentDestinyCard = null;
     }
+    
+    // Forzar fin de turno después de carta de destino
+    this.forceEndTurn = true;
+    this.canEndTurn = true;
+    
+    // Auto-terminar turno después de 2 segundos
+    setTimeout(() => {
+      if (this.forceEndTurn) {
+        this.endTurn();
+      }
+    }, 2000);
   }
 
   handleNegotiationLanding() {

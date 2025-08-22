@@ -1,9 +1,11 @@
 export class Player {
-  constructor(id, name, color, startingMoney = 1500000) {
+  constructor(id, name, color, startingMoney = 1500000, avatarEmoji = null, tokenShape = 'circle') {
     this.id = id;
     this.name = name;
     this.color = color;
     this.money = startingMoney;
+    this.avatarEmoji = avatarEmoji;
+    this.tokenShape = tokenShape; // 'circle' | 'diamond' | 'star' | 'triangle' | 'hex'
     this.position = 0; // Comienza en la casilla 0 (LARGADA)
     this.properties = [];
     this.railroads = [];
@@ -234,6 +236,43 @@ export class Player {
     return total;
   }
   
+  // Mapeo de tokenShape a imagen de ficha
+  static getTokenImageFromShape(tokenShape) {
+    const shapeMap = {
+      'circle': 'amarilla',
+      'diamond': 'azul', 
+      'star': 'verde',
+      'triangle': 'roja',
+      'hex': 'violeta'
+    };
+    
+    return shapeMap[tokenShape] || 'azul'; // Default a azul si no encuentra match
+  }
+
+  // DEPRECATED: Mapeo de colores a fichas (se mantiene por compatibilidad)
+  static getTokenImageFromColor(color) {
+    // Convertir color hex a nombre de ficha más cercano
+    const colorMap = {
+      '#FFD700': 'amarilla',  // Dorado -> Amarilla
+      '#FFA500': 'amarilla',  // Naranja -> Amarilla
+      '#FFFF00': 'amarilla',  // Amarillo -> Amarilla
+      '#0000FF': 'azul',      // Azul -> Azul
+      '#007BC7': 'azul',      // Azul claro -> Azul
+      '#00BFFF': 'azul',      // Azul cielo -> Azul
+      '#008000': 'verde',     // Verde -> Verde
+      '#00FF00': 'verde',     // Verde lima -> Verde
+      '#32CD32': 'verde',     // Verde lima -> Verde
+      '#800080': 'violeta',   // Púrpura -> Violeta
+      '#9400D3': 'violeta',   // Violeta -> Violeta
+      '#FF00FF': 'violeta',   // Magenta -> Violeta
+      '#FF0000': 'roja',      // Rojo -> Roja
+      '#DC143C': 'roja',      // Carmesí -> Roja
+      '#B22222': 'roja',      // Ladrillo -> Roja
+    };
+    
+    return colorMap[color] || 'azul'; // Default a azul si no encuentra match
+  }
+
   // Dibujar el jugador en el tablero
   draw(ctx, board) {
     // Interpolación suave mejorada para la animación
@@ -260,30 +299,61 @@ export class Player {
       this.y = this.targetY;
     }
     
-    // Tamaño del token proporcional al tablero
-    const tokenRadius = board ? Math.max(8, board.boardSize / 70) : 10;
+    // Tamaño del token proporcional al tablero (más grande)
+    const tokenRadius = board ? Math.max(12, board.boardSize / 50) : 15;
+    const tokenSize = tokenRadius * 2;
     const centerX = this.x + tokenRadius;
     const centerY = this.y + tokenRadius;
     
-    // Sombra del token
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-    ctx.shadowBlur = 3;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
+    // Sombra principal más realista
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = tokenRadius * 0.8;
+    ctx.shadowOffsetX = tokenRadius * 0.3;
+    ctx.shadowOffsetY = tokenRadius * 0.3;
     
-    // Fondo del token con gradiente
-    const gradient = ctx.createRadialGradient(
-      centerX, centerY, 0,
-      centerX, centerY, tokenRadius
-    );
-    gradient.addColorStop(0, this.color);
-    gradient.addColorStop(0.8, this.darkenColor(this.color, 0.2));
-    gradient.addColorStop(1, this.darkenColor(this.color, 0.4));
+    // Obtener imagen de ficha según el tokenShape del jugador
+    const fichaColor = Player.getTokenImageFromShape(this.tokenShape);
+    const fichaPath = `/fichas/ficha-${fichaColor}.webp`;
     
-    ctx.fillStyle = gradient;
-    ctx.beginPath();
-    ctx.arc(centerX, centerY, tokenRadius, 0, 2 * Math.PI);
-    ctx.fill();
+    // Crear imagen si no existe
+    if (!this.tokenImage || this.tokenImage.src !== fichaPath) {
+      this.tokenImage = new Image();
+      this.tokenImage.src = fichaPath;
+    }
+    
+    // Dibujar la ficha si la imagen está cargada
+    if (this.tokenImage.complete && this.tokenImage.naturalWidth > 0) {
+      // Dibujar imagen de ficha centrada
+      ctx.drawImage(
+        this.tokenImage, 
+        this.x, 
+        this.y, 
+        tokenSize, 
+        tokenSize
+      );
+    } else {
+      // Fallback: dibujar forma básica mientras carga la imagen
+      const gradient3D = ctx.createRadialGradient(
+        centerX - tokenRadius * 0.3, centerY - tokenRadius * 0.3, 0,
+        centerX, centerY, tokenRadius * 1.2
+      );
+      
+      const baseColor = this.color;
+      const lightColor = this.lightenColor(baseColor, 0.4);
+      const darkColor = this.darkenColor(baseColor, 0.3);
+      const deepShadow = this.darkenColor(baseColor, 0.6);
+      
+      gradient3D.addColorStop(0, lightColor);
+      gradient3D.addColorStop(0.3, baseColor);
+      gradient3D.addColorStop(0.7, darkColor);
+      gradient3D.addColorStop(1, deepShadow);
+      
+      ctx.fillStyle = gradient3D;
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, tokenRadius, 0, 2 * Math.PI);
+      ctx.fill();
+    }
     
     // Resetear sombra
     ctx.shadowColor = 'transparent';
@@ -291,48 +361,40 @@ export class Player {
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
     
-    // Borde dorado del token
-    ctx.strokeStyle = '#FFD700';
-    ctx.lineWidth = Math.max(2, tokenRadius / 5);
+    // Borde metálico opcional (más sutil para no competir con la imagen)
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.7)'; // Dorado semitransparente
+    ctx.lineWidth = Math.max(1, tokenRadius / 8);
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, tokenRadius * 0.95, 0, 2 * Math.PI);
     ctx.stroke();
     
-    // Borde interior negro
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-    
-    // Inicial del jugador
-    ctx.fillStyle = '#FFFFFF';
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 1;
-    ctx.font = `bold ${Math.max(10, tokenRadius * 0.8)}px Arial`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    
-    // Sombra del texto
-    ctx.strokeText(this.name.charAt(0), centerX, centerY);
-    ctx.fillText(this.name.charAt(0), centerX, centerY);
-    
-    // Indicador de cárcel con mejor diseño
+    // Indicador de cárcel mejorado
     if (this.isInJail) {
-      ctx.fillStyle = '#FF0000';
-      ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 1;
-      ctx.font = `${Math.max(8, tokenRadius * 0.6)}px Arial`;
-      
-      const lockX = centerX;
-      const lockY = centerY - tokenRadius - 5;
+      const lockX = centerX + tokenRadius * 0.6;
+      const lockY = centerY - tokenRadius * 0.6;
+      const lockSize = tokenRadius * 0.5;
       
       // Fondo del indicador de cárcel
-      ctx.fillStyle = 'rgba(255, 0, 0, 0.8)';
+      ctx.fillStyle = 'rgba(255, 0, 0, 0.9)';
       ctx.beginPath();
-      ctx.arc(lockX, lockY, tokenRadius * 0.4, 0, 2 * Math.PI);
+      ctx.arc(lockX, lockY, lockSize, 0, 2 * Math.PI);
       ctx.fill();
+      
+      // Borde blanco
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 2;
+      ctx.stroke();
       
       // Icono de candado
       ctx.fillStyle = '#FFFFFF';
+      ctx.font = `${Math.max(8, lockSize * 1.2)}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       ctx.fillText('🔒', lockX, lockY);
     }
+    
+    ctx.restore();
   }
 
   // Función auxiliar para oscurecer colores
@@ -346,11 +408,28 @@ export class Player {
       (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
       (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
   }
+
+  // Función auxiliar para aclarar colores
+  lightenColor(color, amount) {
+    const num = parseInt(color.replace("#", ""), 16);
+    const amt = Math.round(2.55 * amount * 100);
+    const R = (num >> 16) + amt;
+    const G = (num >> 8 & 0x00FF) + amt;
+    const B = (num & 0x0000FF) + amt;
+    return "#" + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+      (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+      (B < 255 ? B < 1 ? 0 : B : 255)).toString(16).slice(1);
+  }
   
   // Obtener información del jugador para la UI
   getInfo() {
     return {
       name: this.name,
+    color: this.color,
+    avatarEmoji: this.avatarEmoji,
+    tokenShape: this.tokenShape,
+  avatarEmoji: this.avatarEmoji,
+  tokenShape: this.tokenShape,
       money: this.money,
       position: this.position,
       properties: this.properties.length,

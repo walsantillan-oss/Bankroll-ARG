@@ -23,6 +23,10 @@ export class Board {
     this.groups = propertyGroups;
     this.players = [];
 
+    // Imagen de fondo del centro del tablero
+    this.backgroundImage = null;
+    this.loadBackgroundImage();
+
     const canvasSize = Math.min(canvas.width, canvas.height);
     this.boardSize = canvasSize * 0.90;
     this.spaceWidth = this.boardSize * 0.125;
@@ -33,6 +37,20 @@ export class Board {
     this.offsetY = (canvas.height - this.boardSize) / 2;
 
     this.calculateSpacePositions();
+  }
+
+  loadBackgroundImage() {
+    this.backgroundImage = new Image();
+    this.backgroundImage.onload = () => {
+      // Redibujar el tablero cuando la imagen se cargue
+      this.draw();
+    };
+    // Intentar cargar la nueva imagen, si falla usará el texto por defecto
+    this.backgroundImage.onerror = () => {
+      console.log('No se pudo cargar la imagen de fondo, usando texto por defecto');
+      this.backgroundImage = null;
+    };
+    this.backgroundImage.src = '/backgrounds/fondo-tablero.webp'; // Archivo WebP
   }
 
   setPlayers(players) {
@@ -123,7 +141,8 @@ export class Board {
   draw() {
     this.drawBoard();
     this.drawSpaces();
-    this.drawCenter();
+    // Comentado drawCenter() para usar solo la imagen de fondo del centro
+    // this.drawCenter();
   }
 
   drawBoard() {
@@ -160,18 +179,43 @@ export class Board {
     this.ctx.lineWidth = 2;
     this.ctx.strokeRect(centerX, centerY, centerSize, centerSize);
 
-    this.ctx.fillStyle = 'rgba(255,255,255,0.85)';
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
+    // Si hay imagen de fondo, usarla; si no, usar texto
+    if (this.backgroundImage && this.backgroundImage.complete) {
+      // Dibujar la imagen centrada y escalada proporcionalmente
+      const imgAspect = this.backgroundImage.width / this.backgroundImage.height;
+      const centerAspect = 1; // El centro es cuadrado
+      
+      let drawWidth, drawHeight, drawX, drawY;
+      
+      if (imgAspect > centerAspect) {
+        // Imagen más ancha - ajustar por altura
+        drawHeight = centerSize * 0.8; // Dejar margen
+        drawWidth = drawHeight * imgAspect;
+      } else {
+        // Imagen más alta - ajustar por ancho
+        drawWidth = centerSize * 0.8; // Dejar margen
+        drawHeight = drawWidth / imgAspect;
+      }
+      
+      drawX = centerX + (centerSize - drawWidth) / 2;
+      drawY = centerY + (centerSize - drawHeight) / 2;
+      
+      this.ctx.drawImage(this.backgroundImage, drawX, drawY, drawWidth, drawHeight);
+    } else {
+      // Texto por defecto si no hay imagen
+      this.ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
 
-    const titleSize = Math.max(20, this.boardSize/26);
-    const subtitleSize = Math.max(12, this.boardSize/40);
+      const titleSize = Math.max(20, this.boardSize/26);
+      const subtitleSize = Math.max(12, this.boardSize/40);
 
-    this.ctx.font = `600 ${titleSize}px Arial`;
-    this.ctx.fillText('BANKROLL', centerX + centerSize/2, centerY + centerSize/2 - subtitleSize*0.8);
-    this.ctx.fillStyle = 'rgba(245,196,81,0.9)';
-    this.ctx.font = `600 ${subtitleSize}px Arial`;
-    this.ctx.fillText('ARGENTINA', centerX + centerSize/2, centerY + centerSize/2 + subtitleSize*0.8);
+      this.ctx.font = `600 ${titleSize}px Arial`;
+      this.ctx.fillText('BANKROLL', centerX + centerSize/2, centerY + centerSize/2 - subtitleSize*0.8);
+      this.ctx.fillStyle = 'rgba(245,196,81,0.9)';
+      this.ctx.font = `600 ${subtitleSize}px Arial`;
+      this.ctx.fillText('ARGENTINA', centerX + centerSize/2, centerY + centerSize/2 + subtitleSize*0.8);
+    }
   }
 
   drawSpaces() {
@@ -438,7 +482,48 @@ export class Board {
       this.ctx.fillText(initial, cx, cy);
     }
 
+    // Agregar casita para propiedades
+    if (space.type === 'PROPERTY') {
+      this.drawPropertyHouse(space, pos);
+    }
+
     this.ctx.restore();
+  }
+
+  drawPropertyHouse(space, pos) {
+    // Crear imagen de casita si no existe
+    if (!this.casitaImage) {
+      this.casitaImage = new Image();
+      this.casitaImage.src = '/icons/casita.webp';
+    }
+
+    // Solo dibujar si la imagen está cargada
+    if (this.casitaImage.complete && this.casitaImage.naturalWidth > 0) {
+      const base = Math.min(pos.width, pos.height);
+      const houseSize = Math.max(12, base * 0.25);
+      
+      // Posición en esquina superior derecha
+      const houseX = pos.x + pos.width - houseSize - 4;
+      const houseY = pos.y + 4;
+      
+      // Sombra para la casita
+      this.ctx.save();
+      this.ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+      this.ctx.shadowBlur = 3;
+      this.ctx.shadowOffsetX = 1;
+      this.ctx.shadowOffsetY = 1;
+      
+      // Dibujar la casita
+      this.ctx.drawImage(
+        this.casitaImage,
+        houseX,
+        houseY,
+        houseSize,
+        houseSize
+      );
+      
+      this.ctx.restore();
+    }
   }
 
   wrapText(text, maxWidth) {

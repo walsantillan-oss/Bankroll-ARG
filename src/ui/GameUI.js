@@ -1,3 +1,5 @@
+import { AVATARS } from '../assets/AvatarLibrary.js';
+
 export class GameUI {
   constructor(game) {
     this.game = game;
@@ -61,9 +63,10 @@ export class GameUI {
   jailPayBtn: document.getElementById('jail-pay-btn'),
   jailAcceptBtn: document.getElementById('jail-accept-btn'),
       
-      // Configuración del juego
+  // Configuración del juego
       playerCountBtns: document.querySelectorAll('.player-count-btn'),
   playerNamesContainer: document.getElementById('player-names-container'),
+  playerAvatarsContainer: document.getElementById('player-avatars-container'),
       winAmountBtns: document.querySelectorAll('.win-amount-btn'),
       customWinAmount: document.getElementById('custom-win-amount'),
       setCustomAmountBtn: document.getElementById('set-custom-amount-btn'),
@@ -150,6 +153,8 @@ export class GameUI {
 
   // Generar campos de nombres
   this.renderPlayerNameInputs(count);
+  // Generar selectores de avatar/color/ficha
+  this.renderPlayerAvatarSelectors(count);
   }
 
   selectWinAmount(e) {
@@ -184,11 +189,21 @@ export class GameUI {
 
     // Obtener nombres ingresados (fallback a nombres por defecto)
     const names = this.collectPlayerNames(playerCount);
+    // Obtener selecciones de avatares/colores/fichas
+  const avatars = [];
+    for (let i = 0; i < playerCount; i++) {
+      const sel = this._avatarSelections?.[i] || {};
+      avatars.push({
+    avatar: sel.avatar || (AVATARS[i % AVATARS.length]?.src || ''),
+        color: sel.color || '#007BC7',
+        token: sel.token || 'circle'
+      });
+    }
 
     this.hideGameSetup();
     // Pasar nombres personalizados al juego
     if (typeof this.game.startGame === 'function') {
-      this.game.startGame(playerCount, winAmount, names);
+      this.game.startGame(playerCount, winAmount, names, avatars);
     }
   }
 
@@ -206,6 +221,116 @@ export class GameUI {
         <input id="player-name-${i}" class="player-name-input" type="text" maxlength="12" placeholder="${defaults[i]}" />
       `;
       container.appendChild(row);
+    }
+  }
+
+  // Genera selectores de avatar/color/ficha por jugador
+  renderPlayerAvatarSelectors(count) {
+    const container = this.elements.playerAvatarsContainer;
+    if (!container) return;
+    container.innerHTML = '';
+
+  const avatarSet = AVATARS;
+    const colorSet = ['#007BC7','#DC143C','#228B22','#FFD700','#9932CC'];
+    const tokenSet = [
+      { id: 'circle', label: 'Amarilla' },
+      { id: 'diamond', label: 'Azul' },
+      { id: 'star', label: 'Verde' },
+      { id: 'triangle', label: 'Roja' },
+      { id: 'hex', label: 'Violeta' }
+    ];
+
+    for (let i = 0; i < count; i++) {
+      const row = document.createElement('div');
+      row.className = 'player-avatar-row';
+      const colors = colorSet.map(c => `<button class="color-swatch" data-color="${c}" style="background:${c}"></button>`).join('');
+      const tokens = tokenSet.map(t => `<option value="${t.id}">${t.label}</option>`).join('');
+  const avatars = avatarSet.map(a => `<button class="avatar-emoji" data-avatar="${a.src}"><img src="${a.src}" alt="${a.label}"/></button>`).join('');
+
+      row.innerHTML = `
+        <div class="avatar-col">
+          <label>Jugador ${i+1}</label>
+          <div class="avatar-emoji-list" id="avatar-list-${i}">
+            ${avatars}
+          </div>
+        </div>
+        <div class="color-col">
+          <label>Color</label>
+          <div class="color-swatch-list" id="color-list-${i}">${colors}</div>
+        </div>
+        <div class="token-col">
+          <label>Ficha</label>
+          <select id="token-select-${i}" class="token-select">${tokens}</select>
+        </div>
+        <div class="preview-col">
+          <label>Vista previa</label>
+          <div class="avatar-preview" id="avatar-preview-${i}">
+            <span class="preview-emoji"><img src="${avatarSet[i % avatarSet.length].src}" alt="avatar"/></span>
+            <span class="preview-color" style="background:${colorSet[i % colorSet.length]}"></span>
+            <span class="preview-token">Amarilla</span>
+          </div>
+        </div>
+      `;
+      container.appendChild(row);
+
+      // Estado inicial
+      this.setAvatarSelection(i, {
+        avatar: avatarSet[i % avatarSet.length].src,
+        color: colorSet[i % colorSet.length],
+        token: 'circle'
+      });
+
+      // Listeners
+      row.querySelectorAll('.avatar-emoji').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const a = btn.dataset.avatar;
+          this.setAvatarSelection(i, { avatar: a });
+          row.querySelectorAll('.avatar-emoji').forEach(el => el.classList.remove('selected'));
+          btn.classList.add('selected');
+        });
+      });
+      row.querySelectorAll('.color-swatch').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const c = btn.dataset.color;
+          this.setAvatarSelection(i, { color: c });
+          row.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('selected'));
+          btn.classList.add('selected');
+        });
+      });
+      const tokenSel = row.querySelector(`#token-select-${i}`);
+      tokenSel.addEventListener('change', (e) => {
+        this.setAvatarSelection(i, { token: e.target.value });
+      });
+    }
+  }
+
+  setAvatarSelection(index, partial) {
+    if (!this._avatarSelections) this._avatarSelections = {};
+    const prev = this._avatarSelections[index] || {};
+    const next = { ...prev, ...partial };
+    this._avatarSelections[index] = next;
+
+    const prevEl = document.getElementById(`avatar-preview-${index}`);
+    if (prevEl) {
+  const emojiEl = prevEl.querySelector('.preview-emoji');
+      const colorEl = prevEl.querySelector('.preview-color');
+      const tokenEl = prevEl.querySelector('.preview-token');
+      if (emojiEl && next.avatar) {
+        emojiEl.innerHTML = `<img src="${next.avatar}" alt="avatar"/>`;
+      }
+      if (colorEl && next.color) colorEl.style.background = next.color;
+      if (tokenEl && next.token) tokenEl.textContent = this.tokenLabel(next.token);
+    }
+  }
+
+  tokenLabel(id) {
+    switch(id) {
+      case 'circle': return 'Amarilla';
+      case 'diamond': return 'Azul';
+      case 'star': return 'Verde';
+      case 'triangle': return 'Roja';
+      case 'hex': return 'Violeta';
+      default: return id;
     }
   }
 
@@ -309,7 +434,7 @@ export class GameUI {
       this.showCenterDiceButton();
       this.hideCenterButtons();
     }
-    this.startPlayerTimer(current.id, this.timerDuration);
+    this.startPlayerTimer(current.id, this.timerDuration, 'ROLL_DICE');
   }
 
   startDecisionPhase() {
@@ -317,32 +442,52 @@ export class GameUI {
     if (!current) return;
     // En fase de decisión se oculta el botón de dados; los botones de acción los controla updateUI
     this.hideCenterDiceButton();
-  this.startPlayerTimer(current.id, this.decisionTimerDuration);
+    this.startPlayerTimer(current.id, this.decisionTimerDuration, 'DECISION');
   }
 
-  startPlayerTimer(playerId, duration = this.timerDuration) {
+  startPlayerTimer(playerId, duration = this.timerDuration, phase = null) {
     this.stopCurrentTimer();
     
     this.currentTimer = {
       playerId: playerId,
       timeLeft: duration,
+      phase: phase, // Almacenar la fase actual
       interval: setInterval(() => {
         this.currentTimer.timeLeft--;
         this.updatePlayerTimerDisplay(playerId, this.currentTimer.timeLeft);
         
         if (this.currentTimer.timeLeft <= 0) {
           this.stopCurrentTimer();
-          // Auto-terminar turno (también salta compra si estaba decidiendo)
-          if (typeof this.game.autoEndTurn === 'function') {
-            this.game.autoEndTurn();
-          } else {
-            this.game.endTurn();
-          }
+          // Ejecutar acción según la fase
+          this.handleTimerExpired(phase);
         }
       }, 1000)
     };
     
     this.updatePlayerTimerDisplay(playerId, duration);
+  }
+
+  handleTimerExpired(phase) {
+    if (phase === 'ROLL_DICE') {
+      // Auto-tirar dados si el tiempo se agotó en la fase de tirada
+      if (this.game.canRollDice && typeof this.game.rollDice === 'function') {
+        console.log('⏰ Tiempo agotado - Tirando dados automáticamente');
+        this.game.rollDice();
+      }
+    } else if (phase === 'DECISION' || this.game.waitingForBuyDecision) {
+      // Auto-saltar compra si estaba decidiendo
+      if (typeof this.game.skipPurchase === 'function') {
+        console.log('⏰ Tiempo agotado - Saltando compra automáticamente');
+        this.game.skipPurchase();
+      }
+    } else {
+      // Auto-terminar turno en otras situaciones
+      if (typeof this.game.autoEndTurn === 'function') {
+        this.game.autoEndTurn();
+      } else {
+        this.game.endTurn();
+      }
+    }
   }
 
   stopCurrentTimer() {
@@ -492,8 +637,13 @@ export class GameUI {
         }
         
         if (initialElement) {
-          initialElement.textContent = player.name.charAt(0).toUpperCase();
-          initialElement.style.backgroundColor = this.getPlayerColor(player.name);
+          const emoji = player.avatarEmoji;
+          if (emoji && (emoji.endsWith('.svg') || emoji.endsWith('.png') || emoji.startsWith('/avatars/'))) {
+            initialElement.innerHTML = `<img src="${emoji}" alt="avatar" style="width:28px;height:28px;border-radius:50%"/>`;
+          } else {
+            initialElement.textContent = emoji ? emoji : player.name.charAt(0).toUpperCase();
+          }
+          initialElement.style.backgroundColor = player.color || this.getPlayerColor(player.name);
         }
         
         // Resaltar jugador activo
