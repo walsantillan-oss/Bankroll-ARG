@@ -201,10 +201,18 @@ export class Game {
       // Verificar si está en la cárcel
       if (currentPlayer.isInJail) {
         if (currentPlayer.tryToGetOutOfJail(dice1, dice2)) {
-          this.logMessage(`🔓 ${currentPlayer.name} sale de la cárcel!`);
+          if (currentPlayer.autoServeJailTime && currentPlayer.jailTurns === 0) {
+            this.logMessage(`🔓 ${currentPlayer.name} completó su tiempo en la cárcel y queda libre!`);
+          } else {
+            this.logMessage(`🔓 ${currentPlayer.name} sale de la cárcel!`);
+          }
           this.movePlayer(total);
         } else {
-          this.logMessage(`🔒 ${currentPlayer.name} permanece en la cárcel (turno ${currentPlayer.jailTurns}/3)`);
+          if (currentPlayer.autoServeJailTime) {
+            this.logMessage(`🔒 ${currentPlayer.name} cumple tiempo en cárcel (turno ${currentPlayer.jailTurns}/3) - sin posibilidad de salir con dobles`);
+          } else {
+            this.logMessage(`🔒 ${currentPlayer.name} permanece en la cárcel (turno ${currentPlayer.jailTurns}/3)`);
+          }
           this.endTurn();
         }
       } else {
@@ -751,8 +759,13 @@ export class Game {
   handleJailAcceptance() {
     const currentPlayer = this.getCurrentPlayer();
     currentPlayer.goToJail();
+    
+    // Configurar para perder 3 turnos automáticamente
+    currentPlayer.jailTurns = 0; // Resetear para que comience el conteo
+    currentPlayer.autoServeJailTime = true; // Nueva propiedad para identificar que acepta cumplir tiempo
+    
     currentPlayer.updateVisualPosition(this.board);
-  this.logMessage(`🔒 ${currentPlayer.name} aceptó ir a la cárcel por 3 turnos`);
+    this.logMessage(`🔒 ${currentPlayer.name} aceptó ir a la cárcel y perderá 3 turnos automáticamente`);
     
     // Cerrar el modal, actualizar UI y terminar turno automáticamente
     if (this.ui) {

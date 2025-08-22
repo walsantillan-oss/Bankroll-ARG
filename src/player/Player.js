@@ -15,6 +15,7 @@ export class Player {
     this.isInJail = false;
     this.jailTurns = 0;
     this.getOutOfJailFreeCards = 0;
+    this.autoServeJailTime = false; // Nueva propiedad para servir tiempo automáticamente
     this.bankrupt = false;
     
     // Para la animación en el tablero
@@ -169,10 +170,24 @@ export class Player {
     
     this.jailTurns++;
     
-    // Salir con dobles
+    // Si acepta cumplir tiempo automáticamente, no puede salir con dobles
+    if (this.autoServeJailTime) {
+      if (this.jailTurns >= 3) {
+        // Después de 3 turnos, sale automáticamente sin pagar
+        this.isInJail = false;
+        this.jailTurns = 0;
+        this.autoServeJailTime = false;
+        return true;
+      }
+      // Sigue en la cárcel, no puede moverse
+      return false;
+    }
+    
+    // Comportamiento normal: puede salir con dobles
     if (diceRoll1 === diceRoll2) {
       this.isInJail = false;
       this.jailTurns = 0;
+      this.autoServeJailTime = false;
       return true;
     }
     
@@ -191,6 +206,7 @@ export class Player {
     if (this.pay(fine)) {
       this.isInJail = false;
       this.jailTurns = 0;
+      this.autoServeJailTime = false;
       return true;
     }
     return false;
@@ -202,6 +218,7 @@ export class Player {
       this.getOutOfJailFreeCards--;
       this.isInJail = false;
       this.jailTurns = 0;
+      this.autoServeJailTime = false;
       return true;
     }
     return false;
