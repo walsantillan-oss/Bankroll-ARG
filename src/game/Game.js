@@ -140,6 +140,9 @@ export class Game {
       player.updateVisualPosition(this.board);
     });
     
+    // Establecer animaciones para el jugador inicial
+    this.updateCurrentPlayerAnimations();
+    
     this.logMessage(`🎮 ¡Comienza la partida con ${this.selectedPlayerCount} jugadores!`);
     this.logMessage(`🎯 Meta de Victoria: $${this.winLimit.toLocaleString()}`);
     this.logMessage(`💸 Límite de Bancarrota: $${this.bankruptLimit.toLocaleString()}`);
@@ -953,6 +956,9 @@ export class Game {
       this.canBuyProperty = false;
       this.waitingForBuyDecision = false;
       
+      // Mantener las animaciones del jugador actual
+      this.updateCurrentPlayerAnimations();
+      
       // Iniciar fase de dados del timer para el turno adicional
       this.ui.startTurnTimer('ROLL_DICE');
     } else {
@@ -966,6 +972,9 @@ export class Game {
       do {
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
       } while (this.players[this.currentPlayerIndex].bankrupt);
+      
+      // Actualizar estado de jugador activo para animaciones
+      this.updateCurrentPlayerAnimations();
       
       // Verificar nuevamente después del cambio de jugador
       if (!this.checkGameEnd()) {
@@ -1105,10 +1114,15 @@ export class Game {
     let currentStep = 0;
     let currentPos = startPosition;
     
+    // Activar el estado de movimiento y asegurar que sigue siendo el jugador activo
+    player.isMoving = true;
+    
     const moveOneSpace = () => {
       if (currentStep >= totalSpaces) {
         // Animación completa
         player.isMoving = false;
+        // Activar rebote al llegar al destino final
+        player.bounceAnimation = 1.2; // Rebote más pronunciado al final
         if (onComplete) onComplete();
         return;
       }
@@ -1133,12 +1147,15 @@ export class Game {
         setTimeout(() => {
           this.soundManager.playSalary();
         }, 100);
+        
+        // Rebote especial al pasar por LARGADA
+        player.bounceAnimation = 0.8;
       }
       
       // El tablero se redibuja automáticamente en el gameLoop
       
       // Programar siguiente movimiento con animación más suave
-      setTimeout(moveOneSpace, 600); // 600ms entre cada casilla para más suavidad
+      setTimeout(moveOneSpace, 500); // 500ms entre cada casilla para mejor ritmo
     };
     
     // Comenzar la animación
@@ -1219,6 +1236,14 @@ export class Game {
 
         this.logMessage(`    ${status}`);
       });
+    });
+  }
+  
+  // Actualizar estado de animaciones para el jugador actual
+  updateCurrentPlayerAnimations() {
+    this.players.forEach((player, index) => {
+      const isCurrentPlayer = index === this.currentPlayerIndex;
+      player.setAsCurrentPlayer(isCurrentPlayer);
     });
   }
 }

@@ -231,6 +231,10 @@ export class Board {
     let bgColor = PALETTE.spaceCard;
     let accentColor = '#D5DBE7';
 
+    // Verificar si la propiedad tiene dueño
+    const hasOwner = space.owner !== undefined && space.owner !== null;
+    const owner = hasOwner && Array.isArray(this.players) ? this.players.find(p => p.id === space.owner) : null;
+    
     if (space.type === 'PROPERTY' && space.group) {
       const groupInfo = this.groups[space.group];
       if (groupInfo) {
@@ -273,6 +277,46 @@ export class Board {
     this.ctx.strokeStyle = PALETTE.border;
     this.ctx.lineWidth = 1;
     this.ctx.stroke();
+
+    // Si la propiedad tiene dueño, agregar overlay del color del jugador
+    if (hasOwner && owner && (space.type === 'PROPERTY' || space.type === 'RAILROAD' || space.type === 'UTILITY')) {
+      const ownerColor = owner.color;
+      
+      // Crear overlay con gradiente del color del jugador
+      this.ctx.save();
+      
+      // Crear gradiente que sea más visible
+      const overlayGradient = this.ctx.createLinearGradient(
+        pos.x, pos.y, pos.x + pos.width, pos.y + pos.height
+      );
+      
+      // Hacer el color más visible con diferentes opacidades
+      overlayGradient.addColorStop(0, ownerColor + '60'); // 37% opacidad
+      overlayGradient.addColorStop(0.5, ownerColor + '80'); // 50% opacidad  
+      overlayGradient.addColorStop(1, ownerColor + '40'); // 25% opacidad
+      
+      this.ctx.fillStyle = overlayGradient;
+      this.drawRoundedRect(pos.x, pos.y, pos.width, pos.height, 5);
+      this.ctx.restore();
+      
+      // Agregar borde más visible del color del jugador
+      this.ctx.strokeStyle = ownerColor;
+      this.ctx.lineWidth = 3;
+      this.ctx.stroke();
+      
+      // Agregar un destello sutil en la esquina superior izquierda
+      this.ctx.save();
+      this.ctx.globalAlpha = 0.8;
+      const highlightGradient = this.ctx.createRadialGradient(
+        pos.x + 10, pos.y + 10, 0,
+        pos.x + 10, pos.y + 10, 20
+      );
+      highlightGradient.addColorStop(0, ownerColor + 'CC'); // 80% opacidad
+      highlightGradient.addColorStop(1, ownerColor + '00'); // 0% opacidad
+      this.ctx.fillStyle = highlightGradient;
+      this.ctx.fillRect(pos.x, pos.y, pos.width, pos.height);
+      this.ctx.restore();
+    }
 
     if (space.type === 'PROPERTY' && space.group && !pos.isCorner) {
       this.ctx.fillStyle = accentColor;
@@ -448,40 +492,31 @@ export class Board {
 
     const owner = Array.isArray(this.players) ? this.players.find(p => p.id === space.owner) : null;
     const color = owner?.color || '#FFD700';
-    const initial = owner?.name ? owner.name.charAt(0).toUpperCase() : '';
 
     const base = Math.min(pos.width, pos.height);
-    const radius = Math.max(6, base * 0.18);
-    const cx = pos.x + 6 + radius;
-    const cy = pos.y + pos.height - 6 - radius;
+    const radius = Math.max(4, base * 0.12); // Hacer el badge más pequeño
+    const cx = pos.x + pos.width - 6 - radius; // Mover a la esquina superior derecha
+    const cy = pos.y + 6 + radius;
 
     this.ctx.save();
     this.ctx.shadowColor = 'rgba(0,0,0,0.35)';
-    this.ctx.shadowBlur = 4;
+    this.ctx.shadowBlur = 3;
     this.ctx.shadowOffsetX = 1;
     this.ctx.shadowOffsetY = 1;
 
+    // Dibujar un pequeño círculo sólido del color del jugador
     this.ctx.beginPath();
     this.ctx.fillStyle = color;
     this.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
     this.ctx.fill();
 
     this.ctx.shadowColor = 'transparent';
-    this.ctx.lineWidth = Math.max(1.5, radius * 0.18);
-    this.ctx.strokeStyle = '#FFD700';
+    this.ctx.lineWidth = Math.max(1, radius * 0.15);
+    this.ctx.strokeStyle = '#FFFFFF';
     this.ctx.stroke();
 
-    if (initial) {
-      this.ctx.fillStyle = '#FFFFFF';
-      this.ctx.strokeStyle = 'rgba(0,0,0,0.6)';
-      this.ctx.lineWidth = Math.max(1, radius * 0.15);
-      this.ctx.font = `bold ${Math.max(8, radius * 1.1)}px Arial`;
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.strokeText(initial, cx, cy);
-      this.ctx.fillText(initial, cx, cy);
-    }
-
+    // Ya no dibujamos inicial - el color del casillero es suficiente indicador
+    
     // Agregar casita para propiedades
     if (space.type === 'PROPERTY') {
       this.drawPropertyHouse(space, pos);

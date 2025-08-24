@@ -24,6 +24,12 @@ export class Player {
     this.targetX = 0;
     this.targetY = 0;
     this.isMoving = false;
+    
+    // Propiedades para animaciones mejoradas
+    this.isCurrentPlayer = false;
+    this.pulseAnimation = 0; // Para efecto de pulsación
+    this.bounceAnimation = 0; // Para efecto de rebote al llegar
+    this.glowIntensity = 0; // Para efecto de brillo
   }
   
   // Mover el jugador a una nueva posición
@@ -57,6 +63,22 @@ export class Player {
       const offset = this.id * baseOffset;
       this.targetX = spacePos.x + spacePos.width/2 + offset - baseOffset;
       this.targetY = spacePos.y + spacePos.height/2 + offset - baseOffset;
+      
+      // Activar animación de rebote al llegar a destino
+      if (!this.isMoving) {
+        this.bounceAnimation = 1.0; // Iniciar rebote
+      }
+    }
+  }
+  
+  // Nuevo método para establecer si es el jugador actual
+  setAsCurrentPlayer(isCurrentPlayer) {
+    this.isCurrentPlayer = isCurrentPlayer;
+    if (isCurrentPlayer) {
+      this.pulseAnimation = 0; // Reiniciar animación de pulsación
+      this.glowIntensity = 1.0; // Activar brillo
+    } else {
+      this.glowIntensity = 0; // Desactivar brillo
     }
   }
   
@@ -292,10 +314,13 @@ export class Player {
 
   // Dibujar el jugador en el tablero
   draw(ctx, board) {
+    // Actualizar animaciones
+    this.updateAnimations();
+    
     // Interpolación suave mejorada para la animación
     if (this.isMoving) {
       // Usar easing para una animación más fluida
-      const speed = 0.12; // Velocidad más lenta para suavidad
+      const speed = 0.15; // Velocidad ajustada para mejor fluidez
       const distanceX = this.targetX - this.x;
       const distanceY = this.targetY - this.y;
       
@@ -310,6 +335,8 @@ export class Player {
         this.x = this.targetX;
         this.y = this.targetY;
         this.isMoving = false;
+        // Activar animación de rebote al llegar
+        this.bounceAnimation = 1.0;
       }
     } else {
       this.x = this.targetX;
@@ -317,15 +344,36 @@ export class Player {
     }
     
     // Tamaño del token proporcional al tablero (más grande)
-    const tokenRadius = board ? Math.max(12, board.boardSize / 50) : 15;
+    let tokenRadius = board ? Math.max(12, board.boardSize / 50) : 15;
+    
+    // Aplicar efecto de rebote
+    if (this.bounceAnimation > 0) {
+      const bounceScale = 1 + (Math.sin(this.bounceAnimation * Math.PI * 4) * 0.2 * this.bounceAnimation);
+      tokenRadius *= bounceScale;
+    }
+    
+    // Aplicar efecto de pulsación para jugador activo
+    if (this.isCurrentPlayer) {
+      const pulseScale = 1 + Math.sin(this.pulseAnimation) * 0.15;
+      tokenRadius *= pulseScale;
+    }
+    
     const tokenSize = tokenRadius * 2;
     const centerX = this.x + tokenRadius;
     const centerY = this.y + tokenRadius;
     
-    // Sombra principal más realista
+    // Sombra principal más realista con efectos dinámicos
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
-    ctx.shadowBlur = tokenRadius * 0.8;
+    
+    // Sombra mejorada para jugador activo
+    if (this.isCurrentPlayer && this.glowIntensity > 0) {
+      ctx.shadowColor = `rgba(255, 215, 0, ${0.8 * this.glowIntensity})`;
+      ctx.shadowBlur = tokenRadius * (1.5 + Math.sin(this.pulseAnimation) * 0.5);
+    } else {
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+      ctx.shadowBlur = tokenRadius * 0.8;
+    }
+    
     ctx.shadowOffsetX = tokenRadius * 0.3;
     ctx.shadowOffsetY = tokenRadius * 0.3;
     
@@ -341,6 +389,24 @@ export class Player {
     
     // Dibujar la ficha si la imagen está cargada
     if (this.tokenImage.complete && this.tokenImage.naturalWidth > 0) {
+      // Aplicar brillo adicional para jugador activo
+      if (this.isCurrentPlayer && this.glowIntensity > 0) {
+        // Anillo de brillo exterior
+        const glowRadius = tokenRadius * (1.4 + Math.sin(this.pulseAnimation) * 0.3);
+        const glowGradient = ctx.createRadialGradient(
+          centerX, centerY, tokenRadius * 0.9,
+          centerX, centerY, glowRadius
+        );
+        glowGradient.addColorStop(0, `rgba(255, 215, 0, ${0.3 * this.glowIntensity})`);
+        glowGradient.addColorStop(0.7, `rgba(255, 215, 0, ${0.1 * this.glowIntensity})`);
+        glowGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+        
+        ctx.fillStyle = glowGradient;
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, glowRadius, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+      
       // Dibujar imagen de ficha centrada
       ctx.drawImage(
         this.tokenImage, 
@@ -378,9 +444,17 @@ export class Player {
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
     
-    // Borde metálico opcional (más sutil para no competir con la imagen)
-    ctx.strokeStyle = 'rgba(255, 215, 0, 0.7)'; // Dorado semitransparente
-    ctx.lineWidth = Math.max(1, tokenRadius / 8);
+    // Borde mejorado para jugador activo
+    if (this.isCurrentPlayer && this.glowIntensity > 0) {
+      // Borde dorado brillante para jugador activo
+      ctx.strokeStyle = `rgba(255, 215, 0, ${0.9 * this.glowIntensity})`;
+      ctx.lineWidth = Math.max(2, tokenRadius / 6);
+    } else {
+      // Borde metálico sutil para jugadores inactivos
+      ctx.strokeStyle = 'rgba(255, 215, 0, 0.4)';
+      ctx.lineWidth = Math.max(1, tokenRadius / 8);
+    }
+    
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.arc(centerX, centerY, tokenRadius * 0.95, 0, 2 * Math.PI);
@@ -412,6 +486,40 @@ export class Player {
     }
     
     ctx.restore();
+  }
+
+  // Actualizar todas las animaciones del jugador
+  updateAnimations() {
+    const deltaTime = 0.016; // Aproximadamente 60 FPS
+    
+    // Actualizar animación de pulsación para jugador activo
+    if (this.isCurrentPlayer) {
+      this.pulseAnimation += deltaTime * 4; // Velocidad de pulsación
+      if (this.pulseAnimation > Math.PI * 2) {
+        this.pulseAnimation -= Math.PI * 2;
+      }
+    }
+    
+    // Actualizar animación de rebote (se desvanece gradualmente)
+    if (this.bounceAnimation > 0) {
+      this.bounceAnimation -= deltaTime * 3; // Velocidad de desvanecimiento
+      if (this.bounceAnimation < 0) {
+        this.bounceAnimation = 0;
+      }
+    }
+    
+    // Actualizar intensidad de brillo
+    if (this.isCurrentPlayer && this.glowIntensity < 1.0) {
+      this.glowIntensity += deltaTime * 5; // Fade in del brillo
+      if (this.glowIntensity > 1.0) {
+        this.glowIntensity = 1.0;
+      }
+    } else if (!this.isCurrentPlayer && this.glowIntensity > 0) {
+      this.glowIntensity -= deltaTime * 3; // Fade out del brillo
+      if (this.glowIntensity < 0) {
+        this.glowIntensity = 0;
+      }
+    }
   }
 
   // Función auxiliar para oscurecer colores

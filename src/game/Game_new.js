@@ -77,7 +77,7 @@ export class Game {
     
     // Colores predefinidos para los jugadores
     const playerColors = ['#FF0000', '#0000FF', '#00FF00', '#FFFF00', '#FF00FF'];
-    const playerNames = ['Rojo', 'Azul', 'Verde', 'Amarillo', 'Magenta'];
+    const playerNames = ['Fede', 'Walter', 'Franci', 'Facu', 'Tuma'];
     
     // Crear jugadores según la cantidad seleccionada
     for (let i = 0; i < this.selectedPlayerCount; i++) {
@@ -88,6 +88,9 @@ export class Game {
     this.players.forEach(player => {
       player.updateVisualPosition(this.board);
     });
+    
+    // Establecer animaciones para el jugador inicial
+    this.updateCurrentPlayerAnimations();
     
     this.gamePhase = 'PLAYING';
     this.logMessage(`🎮 ¡Comienza la partida con ${this.selectedPlayerCount} jugadores!`);
@@ -527,11 +530,17 @@ export class Game {
       this.canEndTurn = false;
       this.canBuyProperty = false;
       this.waitingForBuyDecision = false;
+      
+      // Mantener las animaciones del jugador actual
+      this.updateCurrentPlayerAnimations();
     } else {
       // Pasar al siguiente jugador activo (no en bancarrota)
       do {
         this.currentPlayerIndex = (this.currentPlayerIndex + 1) % this.players.length;
       } while (this.players[this.currentPlayerIndex].bankrupt);
+      
+      // Actualizar estado de jugador activo para animaciones
+      this.updateCurrentPlayerAnimations();
       
       // Verificar nuevamente después del cambio de jugador
       if (!this.checkGameEnd()) {
@@ -618,5 +627,13 @@ export class Game {
     // Mostrar configuración del juego
     this.logMessage('🔄 Iniciando nueva partida...');
     this.showGameSetup();
+  }
+  
+  // Actualizar estado de animaciones para el jugador actual
+  updateCurrentPlayerAnimations() {
+    this.players.forEach((player, index) => {
+      const isCurrentPlayer = index === this.currentPlayerIndex;
+      player.setAsCurrentPlayer(isCurrentPlayer);
+    });
   }
 }
