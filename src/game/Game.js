@@ -117,9 +117,15 @@ export class Game {
     this.waitingForBuyDecision = false;
     this.forceEndTurn = false;
     
-    // Colores predefinidos para los jugadores
-    const playerColors = ['#FF0000', '#0000FF', '#00FF00', '#FFFF00', '#FF00FF'];
-  const defaultNames = ['Rojo', 'Azul', 'Verde', 'Amarillo', 'Magenta'];
+    // Colores predefinidos para los jugadores - Más atractivos y distintivos
+    const playerColors = [
+      '#E74C3C', // Rojo vibrante
+      '#3498DB', // Azul brillante
+      '#2ECC71', // Verde esmeralda
+      '#F39C12', // Naranja dorado
+      '#9B59B6'  // Púrpura elegante
+    ];
+    const defaultNames = ['Rojo', 'Azul', 'Verde', 'Naranja', 'Púrpura'];
     
     // Crear jugadores según la cantidad seleccionada
     for (let i = 0; i < this.selectedPlayerCount; i++) {

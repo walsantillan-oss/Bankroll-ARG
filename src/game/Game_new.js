@@ -75,8 +75,14 @@ export class Game {
     this.currentPlayerIndex = 0;
     this.winner = null;
     
-    // Colores predefinidos para los jugadores
-    const playerColors = ['#FF0000', '#0000FF', '#00FF00', '#FFFF00', '#FF00FF'];
+    // Colores predefinidos para los jugadores - Más atractivos y distintivos
+    const playerColors = [
+      '#E74C3C', // Rojo vibrante
+      '#3498DB', // Azul brillante
+      '#2ECC71', // Verde esmeralda
+      '#F39C12', // Naranja dorado
+      '#9B59B6'  // Púrpura elegante
+    ];
     const playerNames = ['Fede', 'Walter', 'Franci', 'Facu', 'Tuma'];
     
     // Crear jugadores según la cantidad seleccionada

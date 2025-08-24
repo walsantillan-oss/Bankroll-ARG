@@ -281,42 +281,35 @@
           <!-- Mensajes flotantes del juego -->
           <div id="floating-messages" class="floating-messages"></div>
           
-          <!-- Paneles de información flotantes -->
-          <div class="floating-info-panels">
-            <!-- Panel de estado del juego (arriba izquierda) -->
-            <div class="floating-panel top-left" id="game-status-panel">
-              <div class="game-status">
-                <h3>📊 Estado del Juego</h3>
-                <div id="game-progress">
-                  <div class="progress-item">
-                    <span class="label">Meta Victoria:</span>
-                    <span class="value money">$7.500.000</span>
-                  </div>
-                  <div class="progress-item">
-                    <span class="label">Límite Bancarrota:</span>
-                    <span class="value danger">-$1.000.000</span>
-                  </div>
+          <!-- Paneles de información reorganizados según nuevo layout -->
+          
+          <!-- Panel amarillo - Todos los jugadores (lado izquierdo) -->
+          <div class="all-players-panel" id="all-players-panel">
+            <h3>👥 Todos los Jugadores</h3>
+            <div id="all-players-info"></div>
+            
+            <!-- Panel de estado del juego incluido en el panel amarillo -->
+            <div class="game-status" style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid rgba(255,255,255,0.3);">
+              <h4>📊 Estado del Juego</h4>
+              <div id="game-progress">
+                <div class="progress-item">
+                  <span class="label">Meta Victoria:</span>
+                  <span class="value money">$7.500.000</span>
+                </div>
+                <div class="progress-item">
+                  <span class="label">Límite Bancarrota:</span>
+                  <span class="value danger">-$1.000.000</span>
                 </div>
               </div>
             </div>
-            
-            <!-- Panel de jugador actual (abajo derecha) -->
-            <div class="floating-panel bottom-right" id="current-player-panel">
-              <div class="player-info">
-                <h3>🎯 Jugador Actual</h3>
-                <div id="current-player"></div>
-                <div id="player-money"></div>
-                <div id="player-properties"></div>
-              </div>
-            </div>
-            
-            <!-- Panel de todos los jugadores (abajo izquierda) -->
-            <div class="floating-panel bottom-left" id="all-players-panel">
-              <div class="all-players-panel">
-                <h3>👥 Todos los Jugadores</h3>
-                <div id="all-players-info"></div>
-              </div>
-            </div>
+          </div>
+          
+          <!-- Panel verde - Información del jugador actual (lado derecho) -->
+          <div class="current-player-panel" id="current-player-panel">
+            <h3>🎯 Jugador Actual</h3>
+            <div id="current-player"></div>
+            <div id="player-money"></div>
+            <div id="player-properties"></div>
           </div>
         </div>
         

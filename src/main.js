@@ -115,13 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // Hacer el canvas responsive
   function resizeCanvas() {
-    const container = canvas.parentElement;
-    const containerRect = container.getBoundingClientRect();
-    
-    // Mantener proporción cuadrada con más margen para el tablero
-    const maxSize = Math.min(containerRect.width - 40, containerRect.height - 40, 650);
-    canvas.width = maxSize;
-    canvas.height = maxSize;
+    // El canvas ahora ocupa toda la pantalla
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     
     // Recrear el tablero con las nuevas dimensiones
     import('./board/Board.js').then(module => {

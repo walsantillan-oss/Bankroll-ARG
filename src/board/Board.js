@@ -27,8 +27,9 @@ export class Board {
     this.backgroundImage = null;
     this.loadBackgroundImage();
 
+    // Usar toda la pantalla disponible para el tablero
     const canvasSize = Math.min(canvas.width, canvas.height);
-    this.boardSize = canvasSize * 0.90;
+    this.boardSize = canvasSize * 0.95; // Usar más espacio de la pantalla
     this.spaceWidth = this.boardSize * 0.125;
     this.spaceHeight = this.boardSize * 0.095;
     this.cornerSize = this.boardSize * 0.125;
@@ -584,22 +585,104 @@ export class Board {
   drawCenter() {
     const centerX = this.offsetX + this.boardSize / 2;
     const centerY = this.offsetY + this.boardSize / 2;
+    const centerSize = this.boardSize * 0.35; // Tamaño del edificio
+    
+    // Dibujar edificio del banco
+    this.drawBankBuilding(centerX, centerY, centerSize);
+  }
 
-    const baseFontSize = Math.max(16, this.boardSize / 25);
-
-    this.ctx.fillStyle = '#003D82';
-    this.ctx.font = `bold ${baseFontSize}px Arial`;
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-    this.ctx.fillText('BANKROLL', centerX, centerY - baseFontSize/2);
-
-    this.ctx.fillStyle = '#FFD700';
-    this.ctx.font = `bold ${baseFontSize * 0.75}px Arial`;
-    this.ctx.fillText('ARG', centerX, centerY + baseFontSize/3);
-
-    const flagWidth = this.boardSize * 0.12;
-    const flagHeight = this.boardSize * 0.08;
-    this.drawArgentinianFlag(centerX - flagWidth/2, centerY + baseFontSize, flagWidth, flagHeight);
+  drawBankBuilding(centerX, centerY, size) {
+    const ctx = this.ctx;
+    
+    // Base del edificio (plataforma)
+    const baseWidth = size * 0.8;
+    const baseHeight = size * 0.1;
+    const baseY = centerY + size * 0.25;
+    
+    ctx.fillStyle = '#A0A0A0';
+    ctx.fillRect(centerX - baseWidth/2, baseY, baseWidth, baseHeight);
+    
+    // Escalones
+    for (let i = 0; i < 3; i++) {
+      const stepWidth = baseWidth - (i * 20);
+      const stepHeight = 8;
+      const stepY = baseY - ((i + 1) * stepHeight);
+      
+      ctx.fillStyle = '#B0B0B0';
+      ctx.fillRect(centerX - stepWidth/2, stepY, stepWidth, stepHeight);
+    }
+    
+    // Techo triangular
+    const roofHeight = size * 0.15;
+    const roofWidth = size * 0.7;
+    const roofY = centerY - size * 0.35;
+    
+    ctx.fillStyle = '#696969';
+    ctx.beginPath();
+    ctx.moveTo(centerX - roofWidth/2, roofY + roofHeight);
+    ctx.lineTo(centerX, roofY);
+    ctx.lineTo(centerX + roofWidth/2, roofY + roofHeight);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Cuerpo principal del edificio
+    const buildingWidth = size * 0.6;
+    const buildingHeight = size * 0.3;
+    const buildingY = roofY + roofHeight;
+    
+    ctx.fillStyle = '#F5F5F5';
+    ctx.fillRect(centerX - buildingWidth/2, buildingY, buildingWidth, buildingHeight);
+    
+    // Columnas
+    const columnWidth = size * 0.08;
+    const columnHeight = buildingHeight * 0.8;
+    const columnY = buildingY + buildingHeight * 0.2;
+    const numColumns = 3;
+    const columnSpacing = buildingWidth / (numColumns + 1);
+    
+    ctx.fillStyle = '#E0E0E0';
+    for (let i = 0; i < numColumns; i++) {
+      const columnX = centerX - buildingWidth/2 + columnSpacing * (i + 1) - columnWidth/2;
+      ctx.fillRect(columnX, columnY, columnWidth, columnHeight);
+      
+      // Capiteles de las columnas
+      ctx.fillStyle = '#D0D0D0';
+      ctx.fillRect(columnX - 3, columnY - 5, columnWidth + 6, 8);
+      ctx.fillRect(columnX - 3, columnY + columnHeight - 3, columnWidth + 6, 8);
+      ctx.fillStyle = '#E0E0E0';
+    }
+    
+    // Símbolo del dólar en el centro
+    const dollarSize = size * 0.12;
+    const dollarY = centerY + size * 0.05;
+    
+    // Círculo dorado para el dólar
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.arc(centerX, dollarY, dollarSize, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Borde del círculo
+    ctx.strokeStyle = '#FFA500';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    
+    // Símbolo $
+    ctx.fillStyle = '#000000';
+    ctx.font = `bold ${dollarSize * 1.2}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('$', centerX, dollarY);
+    
+    // Texto BANKROLL ARG arriba del edificio
+    const titleY = roofY - size * 0.1;
+    ctx.fillStyle = '#003D82';
+    ctx.font = `bold ${size * 0.08}px Arial`;
+    ctx.fillText('BANKROLL', centerX, titleY);
+    
+    ctx.fillStyle = '#FFD700';
+    ctx.font = `bold ${size * 0.06}px Arial`;
+    ctx.fillText('ARG', centerX, titleY + size * 0.08);
   }
 
   drawArgentinianFlag(x, y, width, height) {

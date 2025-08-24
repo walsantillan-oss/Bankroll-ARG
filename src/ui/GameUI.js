@@ -231,7 +231,13 @@ export class GameUI {
     container.innerHTML = '';
 
   const avatarSet = AVATARS;
-    const colorSet = ['#007BC7','#DC143C','#228B22','#FFD700','#9932CC'];
+    const colorSet = [
+      '#E74C3C', // Rojo vibrante
+      '#3498DB', // Azul brillante  
+      '#2ECC71', // Verde esmeralda
+      '#F39C12', // Naranja dorado
+      '#9B59B6'  // Púrpura elegante
+    ];
     const tokenSet = [
       { id: 'circle', label: 'Amarilla' },
       { id: 'diamond', label: 'Azul' },
@@ -280,6 +286,23 @@ export class GameUI {
         token: 'circle'
       });
 
+      // Marcar selecciones por defecto visualmente
+      // Marcar avatar por defecto
+      const defaultAvatar = avatarSet[i % avatarSet.length].src;
+      row.querySelectorAll('.avatar-emoji').forEach(btn => {
+        if (btn.dataset.avatar === defaultAvatar) {
+          btn.classList.add('selected');
+        }
+      });
+
+      // Marcar color por defecto
+      const defaultColor = colorSet[i % colorSet.length];
+      row.querySelectorAll('.color-swatch').forEach(btn => {
+        if (btn.dataset.color === defaultColor) {
+          btn.classList.add('selected');
+        }
+      });
+
       // Listeners
       row.querySelectorAll('.avatar-emoji').forEach(btn => {
         btn.addEventListener('click', () => {
@@ -295,6 +318,9 @@ export class GameUI {
           this.setAvatarSelection(i, { color: c });
           row.querySelectorAll('.color-swatch').forEach(el => el.classList.remove('selected'));
           btn.classList.add('selected');
+          
+          // Validar colores únicos - avisar si hay duplicados
+          this.validateUniqueColors();
         });
       });
       const tokenSel = row.querySelector(`#token-select-${i}`);
@@ -766,7 +792,13 @@ export class GameUI {
 
   // Funciones de utilidad
   getPlayerColor(playerName) {
-    const colors = ['#007BC7', '#DC143C', '#228B22', '#FFD700', '#9932CC'];
+    const colors = [
+      '#E74C3C', // Rojo vibrante
+      '#3498DB', // Azul brillante  
+      '#2ECC71', // Verde esmeralda
+      '#F39C12', // Naranja dorado
+      '#9B59B6'  // Púrpura elegante
+    ];
     const index = parseInt(playerName.replace('Jugador ', '')) - 1;
     return colors[index % colors.length];
   }
@@ -782,5 +814,21 @@ export class GameUI {
 
   formatNumber(number) {
     return new Intl.NumberFormat('es-AR').format(number);
+  }
+
+  // Validar que no haya colores duplicados
+  validateUniqueColors() {
+    if (!this._avatarSelections) return true;
+    
+    const colors = Object.values(this._avatarSelections).map(selection => selection.color);
+    const uniqueColors = [...new Set(colors)];
+    
+    if (colors.length !== uniqueColors.length) {
+      // Hay colores duplicados - mostrar advertencia sutil
+      console.warn('⚠️ Algunos jugadores tienen el mismo color. Considera usar colores únicos para una mejor experiencia.');
+      return false;
+    }
+    
+    return true;
   }
 }

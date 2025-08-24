@@ -102,20 +102,21 @@ body {
 }
 
 .board-container {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
-  padding: 0;
   z-index: 1;
 }
 
-/* Paneles de información flotantes - Mejorados */
+/* Paneles de información flotantes - Rediseñados según layout */
 .floating-info-panels {
   position: fixed;
   top: 60px; /* Debajo del header */
@@ -124,6 +125,129 @@ body {
   bottom: 0;
   pointer-events: none;
   z-index: 100;
+}
+
+/* Panel amarillo - Todos los jugadores (lado izquierdo) */
+.all-players-panel {
+  position: fixed;
+  top: 60px;
+  left: 20px;
+  width: 240px;
+  bottom: 20px;
+  background: rgba(255, 255, 255, 0.9); /* Fondo blanco con opacidad */
+  backdrop-filter: blur(15px);
+  border: none; /* Sin borde de color */
+  border-radius: 15px;
+  padding: 1rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  color: #333; /* Texto oscuro para contraste con fondo blanco */
+  z-index: 110;
+}
+
+.all-players-panel h3,
+.all-players-panel h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: #2c5aa0; /* Azul oscuro para títulos */
+  border-bottom: 2px solid #2c5aa0;
+  padding-bottom: 0.5rem;
+  text-shadow: none; /* Sin sombra de texto */
+}
+
+/* Estilos para elementos dentro del panel amarillo */
+.all-players-panel .progress-item,
+.all-players-panel .player-item {
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  background: rgba(44, 90, 160, 0.1); /* Fondo azul claro */
+  padding: 0.5rem;
+  border-radius: 8px;
+  border-left: 3px solid #2c5aa0;
+}
+
+.all-players-panel .label {
+  font-weight: 600;
+  color: #333;
+}
+
+.all-players-panel .value {
+  font-weight: bold;
+  color: #555;
+}
+
+.all-players-panel .money {
+  color: #28a745; /* Verde para dinero */
+}
+
+.all-players-panel .danger {
+  color: #dc3545; /* Rojo para peligro */
+}
+
+/* Panel verde - Información del jugador actual (lado derecho) */
+.current-player-panel {
+  position: fixed;
+  top: 60px;
+  right: 20px;
+  width: 240px;
+  bottom: 20px;
+  background: rgba(255, 255, 255, 0.9); /* Fondo blanco con opacidad */
+  backdrop-filter: blur(15px);
+  border: none; /* Sin borde de color */
+  border-radius: 15px;
+  padding: 1rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  pointer-events: auto;
+  overflow-y: auto;
+  transition: all 0.3s ease;
+  color: #333; /* Texto oscuro para contraste con fondo blanco */
+  z-index: 110;
+}
+
+.current-player-panel h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.9rem;
+  color: #2c5aa0; /* Azul oscuro para títulos */
+  border-bottom: 2px solid #2c5aa0;
+  padding-bottom: 0.5rem;
+  text-shadow: none; /* Sin sombra de texto */
+}
+
+/* Estilos para elementos dentro del panel verde */
+.current-player-panel .player-info-item,
+.current-player-panel div {
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.current-player-panel .player-name {
+  background: rgba(44, 90, 160, 0.1); /* Fondo azul claro */
+  padding: 0.5rem;
+  border-radius: 8px;
+  border-left: 3px solid #2c5aa0;
+  font-weight: bold;
+  color: #333;
+}
+
+.current-player-panel #player-money {
+  background: rgba(44, 90, 160, 0.1); /* Fondo azul claro */
+  padding: 0.5rem;
+  border-radius: 8px;
+  border-left: 3px solid #2c5aa0;
+  font-weight: bold;
+  color: #28a745; /* Verde para dinero */
+}
+
+.current-player-panel #player-properties {
+  background: rgba(44, 90, 160, 0.1); /* Fondo azul claro */
+  padding: 0.5rem;
+  border-radius: 8px;
+  border-left: 3px solid #2c5aa0;
+  color: #333;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 .floating-panel {
@@ -150,26 +274,8 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* Posicionamiento de paneles */
-.floating-panel.top-left {
-  top: 20px;
-  left: 20px;
-}
-
-.floating-panel.top-right {
-  top: 20px;
-  right: 20px;
-}
-
-.floating-panel.bottom-left {
-  bottom: 20px;
-  left: 20px;
-}
-
-.floating-panel.bottom-right {
-  bottom: 20px;
-  right: 20px;
-}
+/* Posicionamiento de paneles - REMOVIDO: Ahora usamos paneles específicos */
+/* .floating-panel.top-left, .floating-panel.top-right, etc. ELIMINADOS */
 
 /* Estilos para paneles flotantes - Actualizados para tema oscuro */
 .floating-panel h3 {
@@ -206,16 +312,18 @@ body {
 }
 
 #game-canvas {
-  border: none; /* Quitar borde para pantalla completa */
-  border-radius: 0;
+  border: none;
+  border-radius: 10px;
   background: transparent;
   position: relative;
   z-index: 5;
   display: block;
+  width: 100vw;
+  height: 100vh;
   max-width: 100vw;
   max-height: 100vh;
-  width: auto;
-  height: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  /* Canvas ocupa toda la pantalla */
 }
 
 /* Centro del Tablero */
@@ -545,36 +653,36 @@ body {
 
 .game-log-center {
   position: fixed;
-  bottom: 20px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   z-index: 150;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(255, 255, 255, 0.9); /* Fondo blanco con opacidad */
   backdrop-filter: blur(15px);
   border-radius: 15px;
   padding: 1rem;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: none; /* Sin borde de color */
   max-height: 300px;
   min-width: 400px;
-  max-width: 80vw;
+  max-width: 60vw;
   overflow: hidden;
   transition: all 0.3s ease;
 }
 
 .game-log-center:hover {
-  background: rgba(0, 0, 0, 0.8);
-  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(44, 90, 160, 0.3);
 }
 
 .game-log-center h4 {
-  color: #87CEEB;
+  color: #2c5aa0; /* Azul oscuro para el título */
   margin-bottom: 0.5rem;
   text-align: center;
   font-size: 0.9rem;
   font-weight: 600;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  border-bottom: 1px solid rgba(135, 206, 235, 0.5);
+  text-shadow: none; /* Sin sombra de texto */
+  border-bottom: 1px solid rgba(44, 90, 160, 0.5);
   padding-bottom: 0.3rem;
 }
 
@@ -584,13 +692,13 @@ body {
   font-size: 0.8rem;
   line-height: 1.4;
   padding: 0.5rem;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(44, 90, 160, 0.1); /* Fondo azul claro */
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(44, 90, 160, 0.2);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  color: #ffffff;
+  color: #333; /* Texto oscuro */
 }
 
 .log-entry {
@@ -1274,15 +1382,9 @@ body {
 }
 
 /* All Players Panel */
-/* Avatares de jugadores en esquinas */
+/* Avatares de jugadores en esquinas - OCULTOS en nuevo layout */
 .player-avatars {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 50;
+  display: none; /* Ocultamos los avatares de las esquinas */
 }
 /* Avatares y colores - setup */
 .player-avatars-container { display: flex; flex-direction: column; gap: 0.75rem; }

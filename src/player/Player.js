@@ -295,18 +295,23 @@ export class Player {
       '#FFD700': 'amarilla',  // Dorado -> Amarilla
       '#FFA500': 'amarilla',  // Naranja -> Amarilla
       '#FFFF00': 'amarilla',  // Amarillo -> Amarilla
+      '#F39C12': 'amarilla',  // Naranja dorado (nuevo) -> Amarilla
       '#0000FF': 'azul',      // Azul -> Azul
       '#007BC7': 'azul',      // Azul claro -> Azul
       '#00BFFF': 'azul',      // Azul cielo -> Azul
+      '#3498DB': 'azul',      // Azul brillante (nuevo) -> Azul
       '#008000': 'verde',     // Verde -> Verde
       '#00FF00': 'verde',     // Verde lima -> Verde
       '#32CD32': 'verde',     // Verde lima -> Verde
+      '#2ECC71': 'verde',     // Verde esmeralda (nuevo) -> Verde
       '#800080': 'violeta',   // Púrpura -> Violeta
       '#9400D3': 'violeta',   // Violeta -> Violeta
       '#FF00FF': 'violeta',   // Magenta -> Violeta
+      '#9B59B6': 'violeta',   // Púrpura elegante (nuevo) -> Violeta
       '#FF0000': 'roja',      // Rojo -> Roja
       '#DC143C': 'roja',      // Carmesí -> Roja
       '#B22222': 'roja',      // Ladrillo -> Roja
+      '#E74C3C': 'roja',      // Rojo vibrante (nuevo) -> Roja
     };
     
     return colorMap[color] || 'azul'; // Default a azul si no encuentra match
