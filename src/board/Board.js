@@ -1,18 +1,19 @@
 import { boardSpaces, propertyGroups } from './spaces.js';
 
-// Paleta y helpers para estilo moderno
+// Paleta inspirada en Monopoly clásico
 const PALETTE = {
-  bgStart: '#0E1320',
-  bgEnd: '#161C2A',
-  frame: 'rgba(255,255,255,0.08)',
-  spaceCard: '#FBFBFD',
-  border: 'rgba(10, 13, 17, 0.18)',
-  shadow: 'rgba(0, 0, 0, 0.20)',
-  textDark: '#14171F',
+  bgStart: '#F5F5DC',    // Beige claro como el tablero original
+  bgEnd: '#FFFAF0',      // Blanco hueso
+  frame: '#8B4513',      // Marrón para el borde
+  spaceCard: '#FFFFFF',  // Blanco puro para las casillas
+  border: '#000000',     // Negro para bordes
+  shadow: 'rgba(0, 0, 0, 0.3)',
+  textDark: '#000000',   // Negro para texto
   textLight: '#FFFFFF',
-  priceBg: 'rgba(20,23,31,0.65)',
+  priceBg: 'rgba(0,0,0,0.8)',
   priceText: '#FFFFFF',
-  accentGold: '#F5C451'
+  accentGold: '#FFD700', // Dorado clásico
+  monopolyRed: '#DC143C' // Rojo Monopoly
 };
 
 export class Board {
@@ -142,22 +143,23 @@ export class Board {
   draw() {
     this.drawBoard();
     this.drawSpaces();
-    // Comentado drawCenter() para usar solo la imagen de fondo del centro
-    // this.drawCenter();
+    this.drawCenter(); // Activar el centro estilo Monopoly
   }
 
   drawBoard() {
-    const bg = this.ctx.createLinearGradient(
-      this.offsetX, this.offsetY, this.offsetX + this.boardSize, this.offsetY + this.boardSize
-    );
-    bg.addColorStop(0, PALETTE.bgStart);
-    bg.addColorStop(1, PALETTE.bgEnd);
-    this.ctx.fillStyle = bg;
+    // Fondo beige como el Monopoly clásico
+    this.ctx.fillStyle = PALETTE.bgStart;
     this.ctx.fillRect(this.offsetX, this.offsetY, this.boardSize, this.boardSize);
 
+    // Borde marrón grueso como el tablero original
     this.ctx.strokeStyle = PALETTE.frame;
-    this.ctx.lineWidth = 4;
-    this.ctx.strokeRect(this.offsetX + 2, this.offsetY + 2, this.boardSize - 4, this.boardSize - 4);
+    this.ctx.lineWidth = 8;
+    this.ctx.strokeRect(this.offsetX, this.offsetY, this.boardSize, this.boardSize);
+
+    // Borde interno negro
+    this.ctx.strokeStyle = PALETTE.border;
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeRect(this.offsetX + 6, this.offsetY + 6, this.boardSize - 12, this.boardSize - 12);
 
     this.drawBoardCenter();
   }
@@ -229,110 +231,77 @@ export class Board {
     const pos = this.spacePositions[index];
     if (!pos) return;
 
-    let bgColor = PALETTE.spaceCard;
-    let accentColor = '#D5DBE7';
+    // Fondo blanco por defecto como en Monopoly clásico
+    let bgColor = '#FFFFFF';
+    let propertyColor = null;
 
     // Verificar si la propiedad tiene dueño
     const hasOwner = space.owner !== undefined && space.owner !== null;
     const owner = hasOwner && Array.isArray(this.players) ? this.players.find(p => p.id === space.owner) : null;
     
+    // Colores de propiedades específicos por grupo (estilo Monopoly clásico)
     if (space.type === 'PROPERTY' && space.group) {
       const groupInfo = this.groups[space.group];
       if (groupInfo) {
-        bgColor = groupInfo.color;
-        accentColor = this.darkenColor(groupInfo.color, 20);
+        propertyColor = groupInfo.color;
       }
     } else {
+      // Colores especiales para casillas especiales
       switch(space.type) {
-        case 'START': bgColor = '#32CD32'; accentColor = '#228B22'; break;
-        case 'JAIL': bgColor = '#FF6347'; accentColor = '#DC143C'; break;
-        case 'FREE_PARKING': bgColor = '#9370DB'; accentColor = '#8B008B'; break;
-        case 'GO_TO_JAIL': bgColor = '#FF0000'; accentColor = '#B22222'; break;
-        case 'TAX': bgColor = '#FFD700'; accentColor = '#FFA500'; break;
-        case 'RAILROAD': bgColor = '#2F2F2F'; accentColor = '#000000'; break;
-        case 'UTILITY': bgColor = '#00CED1'; accentColor = '#008B8B'; break;
-        case 'COMMUNITY_CHEST': bgColor = '#87CEEB'; accentColor = '#4682B4'; break;
-        case 'CHANCE': bgColor = '#FF8C00'; accentColor = '#FF6347'; break;
+        case 'START': bgColor = '#32CD32'; break;
+        case 'JAIL': bgColor = '#FFA500'; break;
+        case 'FREE_PARKING': bgColor = '#FF69B4'; break;
+        case 'GO_TO_JAIL': bgColor = '#DC143C'; break;
+        case 'TAX': bgColor = '#FFD700'; break;
+        case 'RAILROAD': bgColor = '#2F2F2F'; break;
+        case 'UTILITY': bgColor = '#87CEEB'; break;
+        case 'COMMUNITY_CHEST': bgColor = '#87CEEB'; break;
+        case 'CHANCE': bgColor = '#FF8C00'; break;
       }
     }
 
-    this.ctx.shadowColor = PALETTE.shadow;
-    this.ctx.shadowBlur = 6;
-    this.ctx.shadowOffsetX = 0;
-    this.ctx.shadowOffsetY = 3;
+    // Dibujar fondo blanco de la casilla
+    this.ctx.fillStyle = bgColor;
+    this.ctx.fillRect(pos.x, pos.y, pos.width, pos.height);
 
-    const gradient = this.ctx.createLinearGradient(
-      pos.x, pos.y, pos.x + pos.width, pos.y + pos.height
-    );
-    gradient.addColorStop(0, bgColor);
-    gradient.addColorStop(1, accentColor);
-    this.ctx.fillStyle = gradient;
+    // Borde negro grueso como Monopoly
+    this.ctx.strokeStyle = '#000000';
+    this.ctx.lineWidth = 2;
+    this.ctx.strokeRect(pos.x, pos.y, pos.width, pos.height);
 
-    this.drawRoundedRect(pos.x, pos.y, pos.width, pos.height, 5);
-
-    this.ctx.shadowColor = 'transparent';
-    this.ctx.shadowBlur = 0;
-    this.ctx.shadowOffsetX = 0;
-    this.ctx.shadowOffsetY = 0;
-
-    this.ctx.strokeStyle = PALETTE.border;
+    // Si es propiedad, dibujar banda de color en la parte superior
+    if (propertyColor && space.type === 'PROPERTY') {
+      const colorBandHeight = pos.height * 0.25;
+      this.ctx.fillStyle = propertyColor;
+      this.ctx.fillRect(pos.x + 1, pos.y + 1, pos.width - 2, colorBandHeight);
+      
+      // Borde de la banda de color
+      this.ctx.strokeStyle = '#000000';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(pos.x + 1, pos.y + 1, pos.width - 2, colorBandHeight);
+    }
     this.ctx.lineWidth = 1;
     this.ctx.stroke();
 
-    // Si la propiedad tiene dueño, agregar overlay del color del jugador
+    // Si la propiedad tiene dueño, agregar indicador del color del jugador
     if (hasOwner && owner && (space.type === 'PROPERTY' || space.type === 'RAILROAD' || space.type === 'UTILITY')) {
       const ownerColor = owner.color;
       
-      // Crear overlay con gradiente del color del jugador
-      this.ctx.save();
-      
-      // Crear gradiente que sea más visible
-      const overlayGradient = this.ctx.createLinearGradient(
-        pos.x, pos.y, pos.x + pos.width, pos.y + pos.height
-      );
-      
-      // Hacer el color más visible con diferentes opacidades
-      overlayGradient.addColorStop(0, ownerColor + '60'); // 37% opacidad
-      overlayGradient.addColorStop(0.5, ownerColor + '80'); // 50% opacidad  
-      overlayGradient.addColorStop(1, ownerColor + '40'); // 25% opacidad
-      
-      this.ctx.fillStyle = overlayGradient;
-      this.drawRoundedRect(pos.x, pos.y, pos.width, pos.height, 5);
-      this.ctx.restore();
-      
-      // Agregar borde más visible del color del jugador
-      this.ctx.strokeStyle = ownerColor;
-      this.ctx.lineWidth = 3;
-      this.ctx.stroke();
-      
-      // Agregar un destello sutil en la esquina superior izquierda
-      this.ctx.save();
-      this.ctx.globalAlpha = 0.8;
-      const highlightGradient = this.ctx.createRadialGradient(
-        pos.x + 10, pos.y + 10, 0,
-        pos.x + 10, pos.y + 10, 20
-      );
-      highlightGradient.addColorStop(0, ownerColor + 'CC'); // 80% opacidad
-      highlightGradient.addColorStop(1, ownerColor + '00'); // 0% opacidad
-      this.ctx.fillStyle = highlightGradient;
-      this.ctx.fillRect(pos.x, pos.y, pos.width, pos.height);
-      this.ctx.restore();
-    }
-
-    if (space.type === 'PROPERTY' && space.group && !pos.isCorner) {
-      this.ctx.fillStyle = accentColor;
-      const barThickness = Math.max(10, Math.min(pos.width, pos.height) * 0.14);
-      if (pos.width > pos.height) {
-        this.roundedRect(pos.x + 3, pos.y + 3, pos.width - 6, barThickness, 4);
-      } else {
-        this.roundedRect(pos.x + 3, pos.y + 3, barThickness, pos.height - 6, 4);
-      }
+      // Pequeño círculo en la esquina para indicar propiedad
+      const circleSize = 8;
+      this.ctx.fillStyle = ownerColor;
+      this.ctx.beginPath();
+      this.ctx.arc(pos.x + pos.width - circleSize - 3, pos.y + circleSize + 3, circleSize, 0, 2 * Math.PI);
       this.ctx.fill();
+      
+      // Borde negro del círculo
+      this.ctx.strokeStyle = '#000000';
+      this.ctx.lineWidth = 1;
+      this.ctx.stroke();
     }
 
     this.drawSpaceText(space, pos);
     this.drawSpaceIcon(space, pos);
-    this.drawOwnershipBadge(space, pos);
   }
 
   drawRoundedRect(x, y, width, height, radius) {
@@ -351,137 +320,78 @@ export class Board {
   }
 
   drawSpaceIcon(space, pos) {
-    const iconSize = Math.max(12, Math.min(pos.width, pos.height) / 4.5);
-    const iconX = pos.x + pos.width - iconSize - 6;
-    const iconY = pos.y + 6;
+    if (pos.isCorner) return; // Las esquinas no necesitan iconos
 
-    this.ctx.fillStyle = 'rgba(20,23,31,0.9)';
+    const iconSize = Math.max(12, Math.min(pos.width, pos.height) / 4);
+    const iconX = pos.x + pos.width - iconSize - 4;
+    const iconY = pos.y + 4;
+
+    this.ctx.fillStyle = '#000000';
     this.ctx.font = `${iconSize}px Arial`;
     this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
+    this.ctx.textBaseline = 'top';
 
     let icon = '';
     switch(space.type) {
-      case 'START': icon = '🏁'; break;
-      case 'JAIL': icon = '🔒'; break;
-      case 'FREE_PARKING': icon = '🅿️'; break;
-      case 'GO_TO_JAIL': icon = '⚡'; break;
-      case 'TAX': icon = '💸'; break;
       case 'RAILROAD': icon = '🚂'; break;
       case 'UTILITY': icon = '⚡'; break;
       case 'COMMUNITY_CHEST': icon = '📦'; break;
       case 'CHANCE': icon = '❓'; break;
-      case 'DESTINY': icon = null; break;
-      case 'PROPERTY': icon = '🏠'; break;
+      case 'TAX': icon = '💰'; break;
       default: icon = ''; break;
     }
 
-    if (space.type === 'DESTINY' && !pos.isCorner) {
-      // Dibujar una tarjetita con signo de pregunta
-      const cardW = iconSize * 1.2;
-      const cardH = iconSize * 1.6;
-      const cx = iconX + iconSize/2; // anclaje similar al icono
-      const cy = iconY + iconSize/2;
-
-      // Fondo de tarjeta
-      this.ctx.save();
-      this.ctx.shadowColor = 'rgba(0,0,0,0.25)';
-      this.ctx.shadowBlur = 3;
-      this.ctx.shadowOffsetX = 1;
-      this.ctx.shadowOffsetY = 1;
-      this.roundedRect(cx - cardW/2, cy - cardH/2, cardW, cardH, Math.min(6, cardW*0.15));
-      this.ctx.fillStyle = '#FFFFFF';
-      this.ctx.fill();
-      this.ctx.shadowColor = 'transparent';
-      this.ctx.lineWidth = 1;
-      this.ctx.strokeStyle = 'rgba(0,0,0,0.2)';
-      this.ctx.stroke();
-
-      // Signo de pregunta
-      this.ctx.fillStyle = '#222';
-      this.ctx.font = `bold ${Math.floor(iconSize * 0.9)}px Arial`;
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.fillText('?', cx, cy - 2);
-      this.ctx.restore();
-      return;
-    }
-
-    if (icon && !pos.isCorner) {
-      this.ctx.fillText(icon, iconX + iconSize/2, iconY + iconSize/2);
+    if (icon) {
+      this.ctx.fillText(icon, iconX + iconSize/2, iconY);
     }
   }
 
   drawSpaceText(space, pos) {
-    let textColor = PALETTE.textDark;
-    if (pos.isCorner) textColor = PALETTE.textLight;
-
-    this.ctx.fillStyle = textColor;
-    this.ctx.lineWidth = 1;
-
-    const baseFontSize = Math.max(10, this.boardSize / 60);
-    this.ctx.font = pos.isCorner ? `600 ${baseFontSize + 6}px Arial` : `600 ${baseFontSize + 2}px Arial`;
-    this.ctx.textAlign = 'center';
-    this.ctx.textBaseline = 'middle';
-
-    const words = space.name.split(' ');
-    let lines = [];
-
+    this.ctx.fillStyle = '#000000';
+    
+    const baseFontSize = Math.max(8, this.boardSize / 70);
+    
     if (pos.isCorner) {
-      lines = this.wrapText(space.name, pos.width - 20);
-    } else {
-      if (words.length > 1 && space.name.length > 15) {
-        lines = words.map(word => word.length > 8 ? word.substring(0, 6) + '.' : word);
-        if (lines.length > 2) lines = [lines[0], lines.slice(1).join(' ')];
-      } else {
-        lines = this.wrapText(space.name, pos.width - 12);
-      }
-    }
-
-    const lineHeight = pos.isCorner ? baseFontSize + 8 : baseFontSize + 4;
-    let startY = pos.y + pos.height/2 - ((lines.length - 1) * lineHeight / 2);
-
-    if (space.type === 'PROPERTY' && space.group && !pos.isCorner) {
-      if (pos.width > pos.height) startY += 6;
-    }
-
-    lines.forEach((line, i) => {
-      const textX = pos.x + pos.width/2;
-      const textY = startY + (i * lineHeight);
-
-      if (textColor === PALETTE.textLight) {
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        this.ctx.fillText(line, textX + 1, textY + 1);
-        this.ctx.fillText(line, textX + 2, textY + 2);
-      } else {
-        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.06)';
-        this.ctx.fillText(line, textX, textY + 1);
-      }
-
-      this.ctx.fillStyle = textColor;
-      this.ctx.fillText(line, textX, textY);
-    });
-
-    if (space.price && !pos.isCorner) {
-      const priceText = `$${(space.price / 1000)}K`;
-      const priceFontSize = Math.max(9, baseFontSize - 1);
-      this.ctx.font = `700 ${priceFontSize}px Arial`;
-
-      const textMetrics = this.ctx.measureText(priceText);
-      const paddingX = 6;
-      const paddingY = 3;
-      const priceWidth = Math.ceil(textMetrics.width) + paddingX * 2;
-      const priceHeight = priceFontSize + paddingY * 2;
-      const priceX = pos.x + pos.width - priceWidth - 6;
-      const priceY = pos.y + pos.height - priceHeight - 6;
-
-      this.ctx.fillStyle = PALETTE.priceBg;
-      this.roundedRect(priceX, priceY, priceWidth, priceHeight, Math.min(10, priceHeight/2));
-      this.ctx.fill();
-
-      this.ctx.fillStyle = PALETTE.priceText;
+      // Esquinas con texto más grande
+      this.ctx.font = `bold ${baseFontSize + 4}px Arial`;
       this.ctx.textAlign = 'center';
-      this.ctx.fillText(priceText, priceX + priceWidth/2, priceY + priceHeight/2 + 1);
+      this.ctx.textBaseline = 'middle';
+      
+      const lines = this.wrapText(space.name, pos.width - 20);
+      const lineHeight = baseFontSize + 6;
+      const startY = pos.y + pos.height/2 - ((lines.length - 1) * lineHeight / 2);
+      
+      lines.forEach((line, i) => {
+        this.ctx.fillText(line, pos.x + pos.width/2, startY + (i * lineHeight));
+      });
+    } else {
+      // Casillas normales con texto más pequeño
+      this.ctx.font = `${baseFontSize}px Arial`;
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      
+      const maxWidth = pos.width - 10;
+      const lines = this.wrapText(space.name, maxWidth);
+      const lineHeight = baseFontSize + 2;
+      
+      // Ajustar posición Y si hay banda de color (propiedades)
+      let textY = pos.y + pos.height/2;
+      if (space.type === 'PROPERTY' && space.group) {
+        textY = pos.y + (pos.height * 0.25) + (pos.height * 0.75) / 2;
+      }
+      
+      const startY = textY - ((lines.length - 1) * lineHeight / 2);
+      
+      lines.forEach((line, i) => {
+        this.ctx.fillText(line, pos.x + pos.width/2, startY + (i * lineHeight));
+      });
+      
+      // Dibujar precio para propiedades
+      if (space.price && (space.type === 'PROPERTY' || space.type === 'RAILROAD' || space.type === 'UTILITY')) {
+        this.ctx.font = `${baseFontSize - 1}px Arial`;
+        const priceText = `$${space.price.toLocaleString()}`;
+        this.ctx.fillText(priceText, pos.x + pos.width/2, pos.y + pos.height - 8);
+      }
     }
   }
 
@@ -585,104 +495,72 @@ export class Board {
   drawCenter() {
     const centerX = this.offsetX + this.boardSize / 2;
     const centerY = this.offsetY + this.boardSize / 2;
-    const centerSize = this.boardSize * 0.35; // Tamaño del edificio
+    const centerSize = this.boardSize * 0.35;
     
-    // Dibujar edificio del banco
-    this.drawBankBuilding(centerX, centerY, centerSize);
+    // Fondo blanco del centro como en Monopoly
+    this.ctx.fillStyle = '#FFFFFF';
+    this.ctx.fillRect(centerX - centerSize/2, centerY - centerSize/2, centerSize, centerSize);
+    
+    // Borde negro
+    this.ctx.strokeStyle = '#000000';
+    this.ctx.lineWidth = 3;
+    this.ctx.strokeRect(centerX - centerSize/2, centerY - centerSize/2, centerSize, centerSize);
+    
+    // Logo estilo Monopoly
+    this.drawMonopolyStyleLogo(centerX, centerY, centerSize);
   }
 
-  drawBankBuilding(centerX, centerY, size) {
+  drawMonopolyStyleLogo(centerX, centerY, size) {
     const ctx = this.ctx;
     
-    // Base del edificio (plataforma)
-    const baseWidth = size * 0.8;
-    const baseHeight = size * 0.1;
-    const baseY = centerY + size * 0.25;
+    // Fondo rojo característico del logo Monopoly
+    const logoWidth = size * 0.8;
+    const logoHeight = size * 0.25;
+    const logoY = centerY - size * 0.1;
     
-    ctx.fillStyle = '#A0A0A0';
-    ctx.fillRect(centerX - baseWidth/2, baseY, baseWidth, baseHeight);
-    
-    // Escalones
-    for (let i = 0; i < 3; i++) {
-      const stepWidth = baseWidth - (i * 20);
-      const stepHeight = 8;
-      const stepY = baseY - ((i + 1) * stepHeight);
-      
-      ctx.fillStyle = '#B0B0B0';
-      ctx.fillRect(centerX - stepWidth/2, stepY, stepWidth, stepHeight);
-    }
-    
-    // Techo triangular
-    const roofHeight = size * 0.15;
-    const roofWidth = size * 0.7;
-    const roofY = centerY - size * 0.35;
-    
-    ctx.fillStyle = '#696969';
-    ctx.beginPath();
-    ctx.moveTo(centerX - roofWidth/2, roofY + roofHeight);
-    ctx.lineTo(centerX, roofY);
-    ctx.lineTo(centerX + roofWidth/2, roofY + roofHeight);
-    ctx.closePath();
+    ctx.fillStyle = PALETTE.monopolyRed;
+    this.roundedRect(centerX - logoWidth/2, logoY - logoHeight/2, logoWidth, logoHeight, 8);
     ctx.fill();
     
-    // Cuerpo principal del edificio
-    const buildingWidth = size * 0.6;
-    const buildingHeight = size * 0.3;
-    const buildingY = roofY + roofHeight;
+    // Borde dorado
+    ctx.strokeStyle = PALETTE.accentGold;
+    ctx.lineWidth = 2;
+    this.roundedRect(centerX - logoWidth/2, logoY - logoHeight/2, logoWidth, logoHeight, 8);
+    ctx.stroke();
     
-    ctx.fillStyle = '#F5F5F5';
-    ctx.fillRect(centerX - buildingWidth/2, buildingY, buildingWidth, buildingHeight);
+    // Texto BANKROLL en estilo Monopoly
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = `bold ${size * 0.08}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('BANKROLL', centerX, logoY);
     
-    // Columnas
-    const columnWidth = size * 0.08;
-    const columnHeight = buildingHeight * 0.8;
-    const columnY = buildingY + buildingHeight * 0.2;
-    const numColumns = 3;
-    const columnSpacing = buildingWidth / (numColumns + 1);
+    // Subtítulo ARG
+    ctx.fillStyle = PALETTE.textDark;
+    ctx.font = `bold ${size * 0.05}px Arial`;
+    ctx.fillText('ARGENTINA', centerX, logoY + size * 0.08);
     
-    ctx.fillStyle = '#E0E0E0';
-    for (let i = 0; i < numColumns; i++) {
-      const columnX = centerX - buildingWidth/2 + columnSpacing * (i + 1) - columnWidth/2;
-      ctx.fillRect(columnX, columnY, columnWidth, columnHeight);
-      
-      // Capiteles de las columnas
-      ctx.fillStyle = '#D0D0D0';
-      ctx.fillRect(columnX - 3, columnY - 5, columnWidth + 6, 8);
-      ctx.fillRect(columnX - 3, columnY + columnHeight - 3, columnWidth + 6, 8);
-      ctx.fillStyle = '#E0E0E0';
-    }
+    // Símbolo del peso argentino
+    const symbolSize = size * 0.15;
+    const symbolY = centerY + size * 0.15;
     
-    // Símbolo del dólar en el centro
-    const dollarSize = size * 0.12;
-    const dollarY = centerY + size * 0.05;
-    
-    // Círculo dorado para el dólar
-    ctx.fillStyle = '#FFD700';
+    // Círculo dorado para el símbolo
+    ctx.fillStyle = PALETTE.accentGold;
     ctx.beginPath();
-    ctx.arc(centerX, dollarY, dollarSize, 0, 2 * Math.PI);
+    ctx.arc(centerX, symbolY, symbolSize, 0, 2 * Math.PI);
     ctx.fill();
     
     // Borde del círculo
-    ctx.strokeStyle = '#FFA500';
-    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
     ctx.stroke();
     
     // Símbolo $
     ctx.fillStyle = '#000000';
-    ctx.font = `bold ${dollarSize * 1.2}px Arial`;
+    ctx.font = `bold ${symbolSize * 1.2}px Arial`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('$', centerX, dollarY);
-    
-    // Texto BANKROLL ARG arriba del edificio
-    const titleY = roofY - size * 0.1;
-    ctx.fillStyle = '#003D82';
-    ctx.font = `bold ${size * 0.08}px Arial`;
-    ctx.fillText('BANKROLL', centerX, titleY);
-    
-    ctx.fillStyle = '#FFD700';
-    ctx.font = `bold ${size * 0.06}px Arial`;
-    ctx.fillText('ARG', centerX, titleY + size * 0.08);
+    ctx.fillText('$', centerX, symbolY);
   }
 
   drawArgentinianFlag(x, y, width, height) {

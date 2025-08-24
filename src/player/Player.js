@@ -490,7 +490,53 @@ export class Player {
       ctx.fillText('🔒', lockX, lockY);
     }
     
+    // Dibujar nombre del jugador encima de la ficha
+    this.drawPlayerName(ctx, centerX, centerY, tokenRadius, board);
+    
     ctx.restore();
+  }
+
+  drawPlayerName(ctx, centerX, centerY, tokenRadius, board) {
+    // Configurar texto
+    const fontSize = board ? Math.max(10, board.boardSize / 80) : 12;
+    ctx.font = `bold ${fontSize}px Arial`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    
+    // Posición del texto (encima de la ficha)
+    const textY = centerY - tokenRadius - 5;
+    
+    // Dibujar fondo semi-transparente para el texto
+    const textWidth = ctx.measureText(this.name).width;
+    const padding = 4;
+    const bgWidth = textWidth + (padding * 2);
+    const bgHeight = fontSize + (padding * 2);
+    
+    // Fondo con el color del jugador pero más transparente
+    ctx.fillStyle = this.color + '80'; // 50% opacidad
+    ctx.fillRect(
+      centerX - bgWidth/2, 
+      textY - bgHeight, 
+      bgWidth, 
+      bgHeight
+    );
+    
+    // Borde del fondo
+    ctx.strokeStyle = this.color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(
+      centerX - bgWidth/2, 
+      textY - bgHeight, 
+      bgWidth, 
+      bgHeight
+    );
+    
+    // Texto blanco con sombra para mejor legibilidad
+    ctx.fillStyle = '#000000';
+    ctx.fillText(this.name, centerX + 1, textY - padding + 1); // Sombra
+    
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText(this.name, centerX, textY - padding); // Texto principal
   }
 
   // Actualizar todas las animaciones del jugador
