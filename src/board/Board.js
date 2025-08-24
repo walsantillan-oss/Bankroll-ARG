@@ -283,20 +283,47 @@ export class Board {
     this.ctx.lineWidth = 1;
     this.ctx.stroke();
 
-    // Si la propiedad tiene dueño, agregar indicador del color del jugador
+    // Si la propiedad tiene dueño, agregar resaltado del color del jugador
     if (hasOwner && owner && (space.type === 'PROPERTY' || space.type === 'RAILROAD' || space.type === 'UTILITY')) {
       const ownerColor = owner.color;
       
-      // Pequeño círculo en la esquina para indicar propiedad
-      const circleSize = 8;
+      // Borde grueso del color del jugador
+      this.ctx.strokeStyle = ownerColor;
+      this.ctx.lineWidth = 4;
+      this.ctx.strokeRect(pos.x + 2, pos.y + 2, pos.width - 4, pos.height - 4);
+      
+      // Overlay semi-transparente del color del jugador
+      this.ctx.save();
+      this.ctx.globalAlpha = 0.2;
+      this.ctx.fillStyle = ownerColor;
+      this.ctx.fillRect(pos.x + 2, pos.y + 2, pos.width - 4, pos.height - 4);
+      this.ctx.restore();
+      
+      // Indicador de propiedad en la esquina superior derecha
+      const flagSize = 12;
+      const flagX = pos.x + pos.width - flagSize - 2;
+      const flagY = pos.y + 2;
+      
+      // Triángulo bandera
       this.ctx.fillStyle = ownerColor;
       this.ctx.beginPath();
-      this.ctx.arc(pos.x + pos.width - circleSize - 3, pos.y + circleSize + 3, circleSize, 0, 2 * Math.PI);
+      this.ctx.moveTo(flagX, flagY);
+      this.ctx.lineTo(flagX + flagSize, flagY + flagSize/2);
+      this.ctx.lineTo(flagX, flagY + flagSize);
+      this.ctx.closePath();
       this.ctx.fill();
       
-      // Borde negro del círculo
+      // Borde negro de la bandera
       this.ctx.strokeStyle = '#000000';
       this.ctx.lineWidth = 1;
+      this.ctx.stroke();
+      
+      // Asta de la bandera
+      this.ctx.strokeStyle = '#654321';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(flagX, flagY);
+      this.ctx.lineTo(flagX, flagY + flagSize + 2);
       this.ctx.stroke();
     }
 

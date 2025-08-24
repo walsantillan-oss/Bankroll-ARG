@@ -9,14 +9,6 @@
   </head>
   <body>
     <div id="app">
-      <header class="game-header">
-        <h1>Bankroll ARG</h1>
-        <div class="game-controls">
-          <button id="new-game-btn">Nueva Partida</button>
-          <button id="pause-btn">Pausa</button>
-          <button id="rules-btn">Reglas</button>
-        </div>
-      </header>
       
       <!-- Modal de configuración del juego -->
       <div id="game-setup-modal" class="modal show">
@@ -306,6 +298,13 @@
           
           <!-- Panel verde - Información del jugador actual (lado derecho) -->
           <div class="current-player-panel" id="current-player-panel">
+            <!-- Controles del juego integrados -->
+            <div class="game-controls-integrated">
+              <button id="new-game-btn" class="control-btn-small">Nueva Partida</button>
+              <button id="pause-btn" class="control-btn-small">Pausa</button>
+              <button id="rules-btn" class="control-btn-small">Reglas</button>
+            </div>
+            
             <h3>🎯 Jugador Actual</h3>
             <div id="current-player"></div>
             <div id="player-money"></div>

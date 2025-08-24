@@ -273,7 +273,7 @@ export class GameUI {
           <div class="avatar-preview" id="avatar-preview-${i}">
             <span class="preview-emoji"><img src="${avatarSet[i % avatarSet.length].src}" alt="avatar"/></span>
             <span class="preview-color" style="background:${colorSet[i % colorSet.length]}"></span>
-            <span class="preview-token">Amarilla</span>
+            <span class="preview-token">${tokenSet[i % tokenSet.length].label}</span>
           </div>
         </div>
       `;
@@ -283,7 +283,7 @@ export class GameUI {
       this.setAvatarSelection(i, {
         avatar: avatarSet[i % avatarSet.length].src,
         color: colorSet[i % colorSet.length],
-        token: 'circle'
+        token: tokenSet[i % tokenSet.length].id // Token diferente por jugador
       });
 
       // Marcar selecciones por defecto visualmente
@@ -302,6 +302,13 @@ export class GameUI {
           btn.classList.add('selected');
         }
       });
+
+      // Preseleccionar token por defecto
+      const defaultToken = tokenSet[i % tokenSet.length].id;
+      const tokenSelect = row.querySelector(`#token-select-${i}`);
+      if (tokenSelect) {
+        tokenSelect.value = defaultToken;
+      }
 
       // Listeners
       row.querySelectorAll('.avatar-emoji').forEach(btn => {
